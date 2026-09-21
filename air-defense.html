@@ -1,0 +1,2711 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080b11">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Небесний Щит — браузерний tower defense про протиповітряну оборону України. Хвилі дронів і ракет, шість міст, бюджет, настрій населення й перки командування.">
+<meta property="og:title" content="Небесний Щит">
+<meta property="og:description" content="Tower defense про ППО України: хвилі дронів і ракет, відбудова міст, рішення кабінету й перки командування.">
+<meta property="og:type" content="website">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Небесний Щит">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E%F0%9F%9B%A1%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<title>Небесний Щит</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root{
+    --bg:#080b11; --panel:#0e141d; --panel-2:#121a25;
+    --line:#22303d; --line-soft:#182430;
+    --ink:#e6edf5; --ink-dim:#93a3b5; --ink-faint:#63748a;
+    --sky:#3d8bfd; --gold:#ffcb3d; --alarm:#ff4d5e; --ok:#4fd39a; --violet:#b48bff;
+    --font-d:"Unbounded","Trebuchet MS",sans-serif;
+    --font-b:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+    --font-m:"IBM Plex Mono","SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  :root{color-scheme:dark}
+  html{-webkit-text-size-adjust:100%}
+  [hidden]{display:none!important}
+  button,canvas{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  #btn-speed::before{content:"Швидкість "}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-b);margin:0;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1420px;margin:0 auto;padding-inline:16px;padding-block:18px 32px}
+
+  header.top{
+    display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:16px;
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .flag{width:26px;height:18px;border-radius:2px;overflow:hidden;flex:none;box-shadow:0 0 0 1px #ffffff14}
+  .flag i{display:block;height:9px}
+  .flag i:first-child{background:#0a5ad6}
+  .flag i:last-child{background:var(--gold)}
+  h1{font-family:var(--font-d);font-weight:800;font-size:clamp(20px,3.4vw,30px);letter-spacing:-.02em;margin:0;line-height:1}
+  .sub{font-family:var(--font-m);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-top:6px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+  button{font-family:inherit;color:inherit;cursor:pointer}
+  .btn{
+    background:var(--panel-2);border:1px solid var(--line);padding:8px 12px;border-radius:3px;
+    font-size:12.5px;font-weight:500;transition:border-color .15s,background .15s,color .15s;
+  }
+  .btn:hover:not(:disabled){border-color:var(--sky);color:#fff}
+  .btn:disabled{opacity:.42;cursor:not-allowed}
+  .btn.primary{background:linear-gradient(180deg,#1663d8,#0a4bb5);border-color:#2b7bee;color:#fff;font-weight:600}
+  .btn.primary:hover:not(:disabled){filter:brightness(1.12)}
+  .btn.danger{border-color:#5a2730;color:#ff8f99;background:#1d1013}
+  .btn.danger:hover:not(:disabled){border-color:var(--alarm);color:#fff}
+  .btn.sm{padding:5px 9px;font-size:11px}
+  :focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+
+  .audio{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:3px;padding:0 10px 0 0}
+  .audio button{background:none;border:0;padding:8px 10px;font-size:13px;line-height:1;border-radius:3px}
+  .audio.off{opacity:.55}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:70px;height:3px;border-radius:2px;background:var(--line);outline-offset:4px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--sky);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:11px;height:11px;border:0;border-radius:50%;background:var(--sky);cursor:pointer}
+
+  .board{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:16px;align-items:start}
+  @media (max-width:1060px){.board{grid-template-columns:minmax(0,1fr)}}
+
+  .stage{position:relative;border:1px solid var(--line);border-radius:4px;background:#070a0f;overflow:hidden}
+  canvas{display:block;width:100%;height:auto;touch-action:manipulation}
+
+  /* ── HUD ── */
+  .statusbar{position:absolute;left:0;right:0;top:0;display:flex;gap:2px;flex-wrap:wrap;padding:8px;pointer-events:none}
+  .stat{
+    background:#070a0fd9;border:1px solid var(--line-soft);backdrop-filter:blur(4px);
+    padding:5px 10px;border-radius:3px;display:flex;align-items:baseline;gap:7px;
+  }
+  .stat b{font-family:var(--font-m);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+  .stat span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+  .stat.money b{color:var(--gold)}
+  @keyframes coinpop{0%{transform:scale(1)}38%{transform:scale(1.13)}100%{transform:scale(1)}}
+  .stat.money.hit{animation:coinpop .26s ease-out}
+  .stat.mood b{color:var(--gold)}
+  .stat.sky b{color:var(--sky)}
+  .stat.alarm b{color:var(--alarm)}
+  .stat.lvl{flex-direction:column;align-items:stretch;gap:4px;min-width:96px}
+  .stat.lvl .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .stat.lvl .top b{color:var(--violet)}
+  .xpbar{height:3px;background:#1a2430;border-radius:2px;overflow:hidden}
+  .xpbar i{display:block;height:100%;background:var(--violet);transition:width .25s}
+  .stat.streak b{color:#ff9a3d}
+
+  .banner{
+    position:absolute;left:50%;transform:translateX(-50%);top:46px;z-index:4;
+    display:flex;align-items:center;gap:10px;max-width:calc(100% - 32px);
+    background:#1a0508e8;border:1px solid #6b2430;border-radius:3px;padding:7px 12px;font-size:11.5px;color:#ffc9cf;
+  }
+  .banner[hidden]{display:none}
+  .banner .dot{width:7px;height:7px;border-radius:50%;background:var(--alarm);flex:none;animation:blip 1s steps(2,end) infinite}
+  .banner .cd{font-family:var(--font-m);color:#fff;font-variant-numeric:tabular-nums}
+  @keyframes blip{50%{opacity:.15}}
+
+  .coach{
+    position:absolute;left:12px;right:12px;bottom:12px;z-index:4;
+    display:flex;gap:10px;align-items:flex-start;
+    background:#071626f2;border:1px solid #1d4a72;border-left:3px solid var(--sky);
+    border-radius:3px;padding:10px 12px;font-size:12px;line-height:1.5;color:#cfe4fb;
+  }
+  .coach[hidden]{display:none}
+  .coach .x{margin-left:auto;background:none;border:0;color:var(--ink-faint);font-size:15px;line-height:1;padding:0 2px}
+
+  .wavebar{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:9px 12px;margin:10px;
+  }
+  .wavebar .label{font-family:var(--font-m);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);white-space:nowrap}
+  .meter{flex:1;height:4px;background:#17212c;border-radius:2px;overflow:hidden;min-width:40px}
+  .meter i{display:block;height:100%;background:var(--sky);width:0;transition:width .2s linear}
+  .meter.prep i{background:var(--gold)}
+  .meter.dead i{background:var(--alarm)}
+  .preview{display:flex;gap:9px;flex-wrap:wrap;font-family:var(--font-m);font-size:10.5px;color:var(--ink-faint);width:100%}
+  .preview b{color:var(--ink-dim);font-weight:400}
+  .preview .d{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:4px;vertical-align:middle}
+
+  /* ── консоль ── */
+  .rail{display:flex;flex-direction:column;gap:14px}
+  .mod{border:1px solid var(--line);border-radius:4px;background:var(--panel);overflow:hidden}
+  .mod > h2{
+    font-family:var(--font-m);font-size:10.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-faint);margin:0;padding:10px 12px 9px;border-bottom:1px solid var(--line-soft);
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+  }
+  .mod > h2 em{font-style:normal;color:var(--sky);letter-spacing:.06em}
+  .mod .body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px}
+
+  .item{
+    display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;
+    background:none;border:1px solid var(--line-soft);border-radius:3px;padding:8px 10px;text-align:left;width:100%;
+    transition:border-color .15s,background .15s;
+  }
+  .item:hover:not(:disabled){border-color:var(--sky);background:#101a26}
+  .item:disabled{opacity:.45;cursor:not-allowed}
+  .item.active{border-color:var(--gold);background:#1a1608}
+  .item .glyph{width:30px;height:30px;border-radius:3px;display:grid;place-items:center;background:var(--panel-2);border:1px solid var(--line)}
+  .item .name{display:block;font-size:12.5px;font-weight:600;line-height:1.25}
+  .item .desc{display:block;font-size:10.5px;color:var(--ink-faint);line-height:1.35;margin-top:3px}
+  .cost{font-family:var(--font-m);font-size:11.5px;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ok)}
+  .cost.no{color:#6b4148}
+  .lvl-dots{display:flex;gap:3px;margin-top:5px}
+  .lvl-dots i{width:13px;height:3px;border-radius:1px;background:#1d2937}
+  .lvl-dots i.on{background:var(--gold)}
+
+  .selbox{border:1px solid var(--gold);background:#17130a;border-radius:3px;padding:10px;display:flex;flex-direction:column;gap:8px}
+  .selbox .h{font-size:12.5px;font-weight:600}
+  .selbox .m{font-family:var(--font-m);font-size:10.5px;color:var(--ink-faint);line-height:1.5}
+  .selbox .row{display:flex;gap:8px}
+  .selbox .row .btn{flex:1}
+
+  .citylist{display:flex;flex-direction:column;gap:7px}
+  .cityrow{display:grid;grid-template-columns:58px minmax(24px,1fr) 52px 26px;gap:8px;align-items:center;font-size:11.5px}
+  .cityrow .n{color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cityrow.out .n{color:var(--ink-faint)}
+  .cityrow .bar{height:6px;background:#141d28;border-radius:1px;overflow:hidden}
+  .cityrow .bar i{display:block;height:100%;transition:width .2s}
+  .cityrow .hp{font-family:var(--font-m);font-size:10.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-dim)}
+  .rep{
+    width:26px;height:22px;border-radius:3px;border:1px solid var(--line);background:var(--panel-2);
+    font-size:11px;line-height:1;padding:0;display:grid;place-items:center;
+  }
+  .rep.on{border-color:var(--ok);background:#0d2119;color:var(--ok)}
+  .rep:disabled{opacity:.35;cursor:not-allowed}
+  .repnote{font-family:var(--font-m);font-size:10px;color:var(--ink-faint);line-height:1.5}
+
+  .efflist{display:flex;flex-wrap:wrap;gap:6px}
+  .eff{
+    font-family:var(--font-m);font-size:10px;padding:3px 7px;border-radius:2px;
+    border:1px solid var(--line);color:var(--ink-dim);
+  }
+  .eff.good{border-color:#29513f;color:var(--ok)}
+  .eff.bad{border-color:#5a2730;color:#ff8f99}
+
+  .log{font-family:var(--font-m);font-size:10.5px;line-height:1.5;color:var(--ink-faint);max-height:112px;overflow-y:auto;display:flex;flex-direction:column-reverse;gap:1px}
+  .log b{color:var(--ink-dim);font-weight:400}
+  .log .hit{color:#ff8f99}
+  .log .good{color:var(--ok)}
+  .log .cash{color:#8fe0bd}
+
+  .legend{display:flex;flex-direction:column;gap:7px}
+  .legend .row{display:grid;grid-template-columns:16px 1fr auto;gap:9px;align-items:center;font-size:11px}
+  .legend .row .t{color:var(--ink-dim)}
+  .legend .row .k{font-family:var(--font-m);font-size:10px;color:var(--ink-faint)}
+
+  /* ── оверлеї ── */
+  .veil{position:absolute;inset:0;background:#05070bf5;display:flex;align-items:center;justify-content:center;padding:18px;z-index:5;overflow-y:auto}
+  .veil[hidden]{display:none}
+  .veil.event{background:linear-gradient(180deg,#2a060cb3,#07030699 55%,#2a060cb3);backdrop-filter:blur(1.5px)}
+  .veil.event.diplo{background:linear-gradient(180deg,#041634b3,#04070d99 55%,#041634b3)}
+  .veil.event.warn{background:linear-gradient(180deg,#2a1e04a6,#07060399 55%,#2a1e04a6)}
+  .veil.event.perk{background:linear-gradient(180deg,#1b0a3bb3,#06040d99 55%,#1b0a3bb3)}
+  .veil.defeat{background:radial-gradient(circle at 50% 45%,#180a0ef2,#05070bfa 70%)}
+
+  .card{max-width:560px;width:100%;margin:auto;display:flex;flex-direction:column;max-height:100%;min-height:0}
+  .mbody{overflow-y:auto;min-height:0;padding-right:6px;margin-right:-6px}
+  .card h3{font-family:var(--font-d);font-weight:800;font-size:clamp(20px,3.6vw,28px);margin:0 0 10px;letter-spacing:-.02em;text-wrap:balance}
+  .card p{font-size:12.5px;line-height:1.6;color:var(--ink-dim);margin:0 0 12px;max-width:64ch}
+  .card ul{margin:0 0 14px;padding-left:18px;font-size:12.5px;line-height:1.7;color:var(--ink-dim)}
+  .card ul b{color:var(--ink)}
+  .card .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .eyebrow{font-family:var(--font-m);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+  .eyebrow.bad{color:var(--alarm)}
+  .eyebrow.sky{color:var(--sky)}
+
+  .card.event{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--alarm);border-radius:4px;padding:16px 18px;box-shadow:0 20px 60px #000000a8;max-width:480px}
+  .card.event.diplo{border-left-color:var(--sky)}
+  .card.event.warn{border-left-color:var(--gold)}
+  .card.event.perk{border-left-color:var(--violet);max-width:560px}
+  .card.event .note{font-size:11px;line-height:1.55;color:var(--ink-faint);margin:0 0 12px}
+  .quote{font-size:12.5px;line-height:1.6;color:var(--ink);border-left:2px solid var(--line);padding:2px 0 2px 12px;margin:0 0 12px;font-style:italic}
+
+  .odds{margin:0 0 14px}
+  .odds .track{display:flex;height:9px;border-radius:2px;overflow:hidden;background:#141d28}
+  .odds .keys{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:10.5px;font-family:var(--font-m);color:var(--ink-faint)}
+  .odds .keys .s{color:var(--alarm)}
+  .odds .keys .w{color:var(--ok)}
+  .ledger{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--font-m);font-size:10.5px;color:var(--ink-faint);margin:0 0 14px;padding-top:10px;border-top:1px solid var(--line-soft)}
+  .ledger b{color:var(--ink-dim);font-weight:400}
+  .timerbar{height:3px;background:#141d28;border-radius:2px;overflow:hidden;margin:0 0 6px}
+  .timerbar i{display:block;height:100%;background:var(--alarm)}
+  .card.event.diplo .timerbar i{background:var(--sky)}
+
+  .choices{display:flex;flex-direction:column;gap:8px}
+  .choice{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:3px;padding:11px 13px;text-align:left;width:100%;
+    transition:border-color .15s,background .15s;
+  }
+  .choice:hover:not(:disabled){border-color:var(--sky);background:#101a26}
+  .choice:disabled{opacity:.45;cursor:not-allowed}
+  .choice .t{font-size:12.5px;font-weight:600}
+  .choice .s{display:block;font-size:10.5px;color:var(--ink-faint);font-weight:400;margin-top:3px;line-height:1.45}
+  .choice .tag{font-family:var(--font-m);font-size:10.5px;white-space:nowrap;color:var(--gold);text-align:right}
+  .choice.bold{border-color:#5a2730}
+  .choice.bold:hover:not(:disabled){border-color:var(--alarm)}
+
+  .draft{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+  .perk{
+    background:var(--panel-2);border:1px solid var(--line);border-top:2px solid var(--violet);border-radius:3px;
+    padding:12px;text-align:left;display:flex;flex-direction:column;gap:6px;transition:border-color .15s,background .15s;
+  }
+  .perk:hover{background:#17132a;border-color:var(--violet)}
+  .perk .t{font-size:12.5px;font-weight:600;line-height:1.3}
+  .perk .s{font-size:10.5px;color:var(--ink-faint);line-height:1.45}
+  .perk .lv{font-family:var(--font-m);font-size:10px;color:var(--violet)}
+
+  .slides .dots{display:flex;gap:5px;margin:0 0 14px}
+  .slides .dots i{width:20px;height:3px;border-radius:2px;background:#1d2937}
+  .slides .dots i.on{background:var(--sky)}
+  .keyrow{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;margin-bottom:12px}
+  .keyrow .ic{
+    width:34px;height:34px;border-radius:4px;display:grid;place-items:center;font-size:16px;
+    background:var(--panel-2);border:1px solid var(--line);
+  }
+  .keyrow .tx{font-size:12.5px;line-height:1.55;color:var(--ink-dim)}
+  .keyrow .tx b{color:var(--ink)}
+  .diffrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 14px}
+  .diffbtn{background:var(--panel-2);border:1px solid var(--line);border-radius:3px;padding:10px;text-align:left}
+  .diffbtn.on{border-color:var(--gold);background:#1a1608}
+  .diffbtn .t{font-size:12.5px;font-weight:600;display:block}
+  .diffbtn .s{font-size:10px;color:var(--ink-faint);display:block;margin-top:3px;line-height:1.4}
+
+  .rankline{font-size:12.5px;color:var(--ink-dim);margin:0 0 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .rankline b{color:var(--gold);font-weight:600}
+  .rankline .rec{font-family:var(--font-m);font-size:11px;color:var(--ink-faint)}
+  .rankline .new{color:#06120c;background:var(--ok);font-family:var(--font-m);font-size:10px;letter-spacing:.1em;padding:2px 6px;border-radius:2px;font-weight:600}
+  .scorebox{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin:0 0 16px}
+  .scorebox div{background:var(--panel);padding:10px 12px}
+  .scorebox b{display:block;font-family:var(--font-m);font-size:19px;font-variant-numeric:tabular-nums}
+  .scorebox span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+  .tally{display:flex;flex-direction:column;gap:5px;margin:0 0 16px}
+  .tally .r{display:grid;grid-template-columns:118px minmax(40px,1fr) 34px;gap:9px;align-items:center;font-size:11.5px}
+  .tally .r span:first-child{color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tally .bar{height:7px;background:#141d28;border-radius:1px;overflow:hidden}
+  .tally .bar i{display:block;height:100%}
+  .tally .num{font-family:var(--font-m);font-size:11.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .cityroll{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px;padding-top:12px;border-top:1px solid var(--line-soft)}
+  .cityroll span{font-size:11px;font-family:var(--font-m);padding:3px 8px;border-radius:2px;border:1px solid var(--line);color:var(--ink-faint)}
+  .cityroll span.held{border-color:#29513f;color:var(--ok)}
+  .cityroll span.fell{border-color:#5a2730;color:#ff8f99;text-decoration:line-through}
+
+  .about{
+    margin-top:16px;border:1px solid var(--line);border-radius:4px;background:var(--panel);
+    display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);
+  }
+  @media (max-width:760px){.about{grid-template-columns:minmax(0,1fr)}}
+  .about > div{padding:16px 18px}
+  .about .left{border-right:1px solid var(--line-soft)}
+  @media (max-width:760px){.about .left{border-right:0;border-bottom:1px solid var(--line-soft)}}
+  .about h2{
+    font-family:var(--font-m);font-size:10.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-faint);margin:0 0 10px;
+  }
+  .about p{font-size:12.5px;line-height:1.65;color:var(--ink-dim);margin:0 0 10px;max-width:68ch}
+  .about p:last-child{margin-bottom:0}
+  .about b{color:var(--ink)}
+  .credits{display:flex;flex-direction:column;gap:9px}
+  .credit{display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;align-items:baseline;font-size:12px}
+  .credit .k{font-family:var(--font-m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+  .credit .v{color:var(--ink-dim)}
+  .credit .v.name{
+    font-family:var(--font-d);font-weight:600;font-size:14px;color:var(--ink);
+    letter-spacing:-.01em;display:flex;align-items:center;gap:7px;
+  }
+  .credit .v.name .fl{
+    width:18px;height:12px;border-radius:2px;overflow:hidden;flex:none;box-shadow:0 0 0 1px #ffffff1a;display:block;
+  }
+  .credit .v.name .fl i{display:block;height:6px}
+  .credit .v.name .fl i:first-child{background:#0a5ad6}
+  .credit .v.name .fl i:last-child{background:var(--gold)}
+
+  footer.note{margin-top:18px;padding-top:12px;border-top:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-faint);line-height:1.6;max-width:80ch}
+  kbd{font-family:var(--font-m);font-size:10.5px;background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-dim)}
+  /* ── мобільна версія: телефони в портреті та в ландшафті ── */
+  .quickbar,.tabs,.rotate-hint{display:none}
+  .qrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .qbtn{
+    display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:7px 4px 6px;
+  }
+  .qbtn:disabled{opacity:.42}
+  .qbtn.active{border-color:var(--gold);background:#1a1608}
+  .qbtn .qn{font-size:10.5px;font-weight:600;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .qbtn .cost{font-size:10px}
+  .qnote{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
+    background:#17130a;border:1px solid #5c4a17;border-radius:4px;padding:8px 10px;font-size:11.5px;color:var(--ink-dim);
+  }
+  .qnote .qact{display:flex;gap:6px;flex-wrap:wrap}
+  .qnote .btn.sm{padding:8px 11px;font-size:11.5px}
+  .tabs button{
+    flex:0 0 auto;background:var(--panel);border:1px solid var(--line);border-radius:4px;
+    padding:9px 12px;font-size:12px;font-weight:500;color:var(--ink-dim);
+  }
+  .tabs button.on{border-color:var(--sky);color:#fff;background:#0f1d30}
+  .tabs button.ping::after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-left:6px;vertical-align:middle}
+  .rotate-hint{align-items:center;gap:8px;padding:7px 12px;font-size:11px;color:var(--ink-faint);border-bottom:1px solid var(--line-soft)}
+  .rotate-hint .x{margin-left:auto;background:none;border:0;color:var(--ink-faint);font-size:16px;line-height:1;padding:2px 4px}
+
+  @media (max-width:760px), (max-height:500px){
+    .wrap{padding-block:10px 24px}
+    header.top{padding-bottom:8px;margin-bottom:10px;gap:8px;align-items:center}
+    .sub{display:none}
+    h1{font-size:19px}
+    .toolbar{gap:5px}
+    .toolbar .btn{padding:8px 10px;font-size:12px}
+    #vol{display:none}
+    .audio{padding:0}
+    #btn-speed::before{content:""}
+
+    .stage{display:flex;flex-direction:column;margin-inline:-16px;border-radius:0;border-inline:0}
+    .statusbar{position:static;order:-2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:6px 8px}
+    .stat{flex-direction:column;align-items:flex-start;gap:1px;padding:4px 7px;backdrop-filter:none;background:var(--panel);min-width:0}
+    .stat b{font-size:13px}
+    .stat span{font-size:8.5px;letter-spacing:.08em;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+    .stat.lvl{min-width:0}
+    .stat.lvl .top{width:100%;gap:4px;overflow:visible}
+    .stat.lvl .top b{font-size:12px}
+    .stat.lvl #s-xp{font-size:9px;letter-spacing:0;overflow:visible}
+    .banner{position:static;order:-1;transform:none;margin:0 8px 6px;max-width:none;font-size:11px}
+    canvas{order:0}
+    .wavebar{order:1;margin:8px 8px 6px;padding:8px 10px;gap:8px}
+    .wavebar .label{font-size:10px;flex:1 1 100%;white-space:normal}
+    .wavebar .btn{flex:0 0 auto;padding:9px 12px}
+    .preview{font-size:10px;gap:6px}
+    .quickbar{display:flex;order:2;flex-direction:column;gap:8px;padding:0 8px 10px}
+
+    .veil{position:fixed;z-index:40;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+    .coach{position:fixed;z-index:30;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom))}
+
+    .tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;margin-bottom:-2px}
+    .tabs::-webkit-scrollbar{display:none}
+    .rail{gap:10px}
+    .rail > .mod{display:none}
+    .rail > .mod.on{display:block}
+    .rep{width:40px;height:34px;font-size:14px}
+    .cityrow{grid-template-columns:64px minmax(24px,1fr) 58px 40px}
+    .item{padding:10px}
+    .choice{padding:13px 14px}
+    .diffrow{grid-template-columns:minmax(0,1fr)}
+  }
+  @media (max-width:760px) and (orientation:portrait){
+    .rotate-hint{display:flex;order:-3}
+    .rotate-hint.gone{display:none}
+  }
+  /* телефон горизонтально: мапа на всю висоту, засоби — колонкою праворуч */
+  @media (max-height:500px) and (orientation:landscape){
+    .stage{display:grid;grid-template-columns:minmax(0,1fr) 132px;grid-template-areas:"stat stat" "ban ban" "cv quick" "wave wave"}
+    .statusbar{grid-area:stat;grid-template-columns:repeat(7,minmax(0,1fr))}
+    .banner{grid-area:ban}
+    canvas{grid-area:cv;width:auto;max-width:100%;height:calc(100vh - 112px);height:calc(100svh - 112px);justify-self:center}
+    .quickbar{grid-area:quick;padding:0 8px 0 0;overflow-y:auto;max-height:calc(100svh - 112px)}
+    .qrow{grid-template-columns:minmax(0,1fr);gap:5px}
+    .qbtn{flex-direction:row;justify-content:space-between;padding:6px 8px}
+    .qbtn svg{flex:none}
+    .wavebar{grid-area:wave}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="flag" aria-hidden="true"><i></i><i></i></div>
+      <div>
+        <h1>Небесний Щит</h1>
+        <div class="sub">Протиповітряна оборона · командний пункт</div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="audio" id="audio-box">
+        <button id="btn-sound" type="button" aria-label="Увімкнути або вимкнути звук">🔊</button>
+        <input type="range" id="vol" min="0" max="100" value="55" aria-label="Гучність">
+      </div>
+      <button class="btn" id="btn-help" type="button">Довідка</button>
+      <button class="btn" id="btn-speed" type="button" title="Швидкість гри">×1</button>
+      <button class="btn" id="btn-pause" type="button">Пауза</button>
+      <button class="btn danger" id="btn-restart" type="button">Заново</button>
+    </div>
+  </header>
+
+  <div class="board">
+    <div class="stage" id="stage">
+      <div class="rotate-hint" id="rotate-hint">
+        <span>↻ Поверніть телефон горизонтально — мапа стане майже вдвічі більшою</span>
+        <button class="x" id="rotate-x" type="button" aria-label="Сховати підказку">×</button>
+      </div>
+      <canvas id="cv" width="1920" height="1320" aria-label="Мапа України з позиціями ППО"></canvas>
+
+      <div class="statusbar">
+        <div class="stat money"><b id="s-money">0</b><span>₴ бюджет</span></div>
+        <div class="stat mood"><b id="s-mood">60%</b><span>Настрій</span></div>
+        <div class="stat lvl">
+          <span class="top"><b id="s-lvl">Рів. 1</b><span id="s-xp">0/70</span></span>
+          <span class="xpbar"><i id="s-xpbar"></i></span>
+        </div>
+        <div class="stat sky"><b id="s-shield">100%</b><span>Щит</span></div>
+        <div class="stat"><b id="s-wave">0</b><span>Хвиля</span></div>
+        <div class="stat streak"><b id="s-streak">×1.0</b><span>Серія</span></div>
+        <div class="stat alarm"><b id="s-leak">0</b><span>Прорвалось</span></div>
+      </div>
+
+      <div class="banner" id="banner" hidden>
+        <span class="dot"></span><span id="banner-text"></span><span class="cd" id="banner-cd"></span>
+      </div>
+
+      <div class="coach" id="coach" hidden>
+        <span>💡</span><span id="coach-text"></span>
+        <button class="x" id="coach-x" type="button" aria-label="Закрити підказку">×</button>
+      </div>
+
+      <div class="veil" id="veil" hidden><div class="card" id="veil-card"></div></div>
+
+      <div class="wavebar">
+        <span class="label" id="w-label">Підготовка</span>
+        <span class="meter prep" id="w-meter"><i></i></span>
+        <button class="btn primary" id="btn-wave" type="button">Почати хвилю</button>
+        <span class="preview" id="preview"></span>
+      </div>
+
+      <div class="quickbar" id="quickbar"></div>
+    </div>
+
+    <div class="rail">
+      <nav class="tabs" id="tabs" aria-label="Розділи командного пункту">
+        <button type="button" data-tab="build">Засоби</button>
+        <button type="button" data-tab="cities">Міста</button>
+        <button type="button" data-tab="cab">Кабінет</button>
+        <button type="button" data-tab="hq">Штаб</button>
+        <button type="button" data-tab="log">Зведення</button>
+        <button type="button" data-tab="legend">Цілі</button>
+      </nav>
+      <section class="mod" data-tab="build">
+        <h2>Розгортання <em id="sel-hint"></em></h2>
+        <div class="body" id="build"></div>
+      </section>
+
+      <section class="mod" data-tab="cities">
+        <h2>Міста · відбудова <em id="cities-sum"></em></h2>
+        <div class="body">
+          <div class="citylist" id="citylist"></div>
+          <div class="repnote" id="repnote"></div>
+        </div>
+      </section>
+
+      <section class="mod" data-tab="cab">
+        <h2>Кабінет рішень <em id="cab-hint"></em></h2>
+        <div class="body">
+          <button class="btn primary" id="btn-cab" type="button">Скликати засідання</button>
+          <div class="efflist" id="efflist"></div>
+        </div>
+      </section>
+
+      <section class="mod" data-tab="hq">
+        <h2>Штаб · постійні контракти</h2>
+        <div class="body" id="shop"></div>
+      </section>
+
+      <section class="mod" data-tab="log">
+        <h2>Оперативне зведення</h2>
+        <div class="body"><div class="log" id="log"></div></div>
+      </section>
+
+      <section class="mod" data-tab="legend">
+        <h2>Повітряні цілі</h2>
+        <div class="body"><div class="legend" id="legend"></div></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="about">
+    <div class="left">
+      <h2>Про гру</h2>
+      <p><b>Небесний Щит</b> — браузерний tower defense про протиповітряну оборону України.
+      Хвилями йдуть «шахеди», крилаті та балістичні ракети, КАБи й розвідувальні дрони; ви розгортаєте
+      засоби ППО на мапі й не пускаєте їх до шести міст, у кожного з яких є власний запас міцності.</p>
+      <p>Уся економіка тримається на трьох речах: <b>бюджет</b> у гривнях, який дають збиті цілі, трофеї
+      й податки; <b>настрій населення</b>, що росте від збиттів, падає від влучань і множить усі доходи;
+      та <b>досвід</b>, який відкриває перки командування. Окремим шаром — події: зліт МіГ-31К,
+      загроза «Орєшніка» зі ставкою 20/80, пакети партнерів і популістичні рішення кабінету.</p>
+      <p>Гра написана на чистому Canvas і WebAudio — без ігрових рушіїв, зовнішніх бібліотек, зображень
+      і звукових файлів: увесь супровід синтезується просто у браузері. ТТХ засобів і цілей навмисно
+      спрощені, мапа стилізована — це гра, а не симулятор.</p>
+    </div>
+    <div class="right">
+      <h2>Титри</h2>
+      <div class="credits">
+        <div class="credit">
+          <span class="k">Розробник</span>
+          <span class="v name"><span class="fl" aria-hidden="true"><i></i><i></i></span>A.Shumylo 🇺🇦</span>
+        </div>
+        <div class="credit"><span class="k">Версія</span><span class="v">1.0 · 2026</span></div>
+        <div class="credit"><span class="k">Технології</span><span class="v">HTML5 Canvas, WebAudio API, ванільний JavaScript</span></div>
+        <div class="credit"><span class="k">Шрифти</span><span class="v">Unbounded, IBM Plex Sans, IBM Plex Mono</span></div>
+        <div class="credit"><span class="k">Присвята</span><span class="v">розрахункам ППО, які тримають небо щоночі</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="note">
+    Оберіть засіб ППО (на телефоні — під мапою) і клікніть по мапі, щоб розгорнути позицію; на сенсорному екрані перший дотик ставить позначку, другий — підтверджує. Клік по власній позиції відкриває
+    її покращення чи продаж. Монети зі збитих цілей самі летять на баланс. <kbd>Пробіл</kbd> — пауза,
+    <kbd>1</kbd>–<kbd>5</kbd> — вибір засобу, <kbd>Esc</kbd> — скасувати, <kbd>R</kbd> — відбудова всіх міст.
+    Партія зберігається автоматично після кожної хвилі: перезавантаження сторінки пропонує продовжити з того ж місця.
+    Гра умовна: ТТХ спрощені, мапа стилізована.
+  </footer>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════ ЗВУК ══════════════ */
+const SFX = (() => {
+  let ac=null, master=null, noiseBuf=null, buzzGain=null, ready=false;
+  let on=true, vol=0.55;
+  const last = Object.create(null);
+  try{
+    const raw = localStorage.getItem("ns-audio");
+    if(raw){ const o = JSON.parse(raw); on = o.on !== false; if(typeof o.vol === "number") vol = o.vol; }
+  }catch(e){}
+  const save = () => { try{ localStorage.setItem("ns-audio", JSON.stringify({on,vol})); }catch(e){} };
+
+  function init(){
+    if(ac){ if(ac.state === "suspended") ac.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    try{ ac = new AC(); }catch(e){ return; }
+    master = ac.createGain(); master.gain.value = on ? vol : 0; master.connect(ac.destination);
+    const len = Math.floor(ac.sampleRate*1.5);
+    noiseBuf = ac.createBuffer(1,len,ac.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+    buzzGain = ac.createGain(); buzzGain.gain.value = 0;
+    const lp = ac.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=480;
+    buzzGain.connect(lp); lp.connect(master);
+    const saw = ac.createOscillator(); saw.type="sawtooth"; saw.frequency.value=86;
+    const lfo = ac.createOscillator(); lfo.type="sine"; lfo.frequency.value=5.2;
+    const amt = ac.createGain(); amt.gain.value=9;
+    lfo.connect(amt); amt.connect(saw.frequency); saw.connect(buzzGain);
+    saw.start(); lfo.start();
+    ready = true;
+  }
+  const gate = (k,ms) => { const t=performance.now(); if(last[k] && t-last[k]<ms) return false; last[k]=t; return true; };
+  const live = () => ready && on && ac && ac.state === "running";
+
+  function noise(dur,type,freq,q,g,when){
+    const t = ac.currentTime + (when||0);
+    const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+    const f = ac.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q||1;
+    const gn = ac.createGain();
+    gn.gain.setValueAtTime(0.0001,t);
+    gn.gain.exponentialRampToValueAtTime(Math.max(0.0002,g), t+0.01);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    s.connect(f); f.connect(gn); gn.connect(master);
+    s.start(t); s.stop(t+dur+0.03);
+  }
+  function tone(type,f0,f1,dur,g,when){
+    const t = ac.currentTime + (when||0);
+    const o = ac.createOscillator(); o.type=type;
+    const gn = ac.createGain();
+    o.frequency.setValueAtTime(f0,t);
+    if(f1 && f1!==f0) o.frequency.exponentialRampToValueAtTime(Math.max(18,f1), t+dur);
+    gn.gain.setValueAtTime(0.0001,t);
+    gn.gain.exponentialRampToValueAtTime(Math.max(0.0002,g), t+Math.min(0.02,dur*0.2));
+    gn.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(gn); gn.connect(master);
+    o.start(t); o.stop(t+dur+0.03);
+  }
+  return {
+    init,
+    get on(){ return on; },
+    get vol(){ return vol; },
+    toggle(){ on=!on; save(); init(); if(master) master.gain.setTargetAtTime(on?vol:0, ac.currentTime, 0.05); return on; },
+    setVol(v){ vol=Math.max(0,Math.min(1,v)); save(); if(master&&on) master.gain.setTargetAtTime(vol, ac.currentTime, 0.05); },
+    gun(){ if(!live()||!gate("gun",52)) return; noise(0.05,"bandpass",2300,1.4,0.055); tone("square",340,180,0.04,0.02); },
+    missile(){ if(!live()||!gate("msl",70)) return; noise(0.28,"highpass",700,0.7,0.05); tone("sawtooth",760,190,0.3,0.03); },
+    boom(k){ if(!live()||!gate("boom",42)) return; k=k||1; noise(0.2+0.22*k,"lowpass",900-260*k,0.9,0.055*k); tone("sine",140,42,0.22+0.1*k,0.05*k); },
+    cityHit(){ if(!live()) return; noise(0.95,"lowpass",420,0.9,0.15); tone("sine",100,28,0.85,0.14);
+      tone("triangle",520,440,0.5,0.05,0.25); tone("triangle",440,520,0.5,0.05,0.75); },
+    siren(){ if(!live()) return; for(let i=0;i<2;i++){ tone("triangle",430,760,0.85,0.045,i*1.5); tone("triangle",760,430,0.75,0.04,i*1.5+0.85); } },
+    coin(){ if(!live()||!gate("coin",45)) return; tone("sine",880,1320,0.11,0.06); },
+    build(){ if(!live()) return; tone("square",160,86,0.1,0.08); noise(0.09,"bandpass",1100,1,0.05); },
+    buy(){ if(!live()) return; tone("triangle",620,620,0.13,0.06); tone("triangle",930,930,0.2,0.055,0.09); },
+    denied(){ if(!live()||!gate("no",180)) return; tone("square",180,120,0.14,0.045); },
+    level(){ if(!live()) return; [392,523.25,659.25,880].forEach((f,i)=>tone("triangle",f,f,0.4,0.055,i*0.08)); },
+    clear(){ if(!live()) return; [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone("triangle",f,f,0.34,0.05,i*0.1)); },
+    defeat(){ if(!live()) return; tone("sawtooth",190,38,2.6,0.1); noise(2.2,"lowpass",300,0.8,0.09); tone("sine",70,52,1.8,0.07,0.4); },
+    buzz(n){ if(!ready||!buzzGain) return; buzzGain.gain.setTargetAtTime(on?Math.min(0.07,n*0.009):0, ac.currentTime, 0.3); }
+  };
+})();
+
+/* ══════════════ ГЕОГРАФІЯ ══════════════ */
+const OUTLINE = [
+  [23.6,51.5],[24.5,51.9],[26.0,51.9],[27.7,51.5],[29.2,51.6],[30.5,51.9],[31.8,52.35],
+  [33.2,52.3],[34.4,51.3],[35.4,50.5],[36.6,50.4],[38.2,50.0],[39.3,49.8],[40.2,49.6],
+  [40.1,48.9],[39.8,48.3],[38.9,48.0],[38.3,47.6],[37.5,47.1],[36.5,46.7],[35.2,46.6],
+  [34.8,46.1],[34.0,46.2],[33.6,46.0],[33.5,45.3],[34.5,45.4],[35.5,45.3],[36.6,45.4],
+  [35.9,45.0],[35.0,44.4],[33.5,44.4],[33.4,45.1],[32.5,45.3],[31.5,46.3],[30.8,46.5],
+  [30.2,45.8],[29.7,45.5],[28.5,45.3],[28.2,45.45],[28.9,46.4],[28.2,46.6],[27.5,47.5],
+  [26.6,48.2],[25.2,47.9],[24.9,47.7],[23.2,48.1],[22.15,48.4],[22.5,49.1],[23.6,50.4],[24.1,50.9]
+];
+const DNIPRO = [[30.5,51.6],[30.6,51.0],[30.5,50.45],[31.2,49.9],[32.06,49.44],[33.4,49.06],
+                [34.4,48.6],[35.05,48.47],[35.1,47.84],[34.0,47.2],[32.9,46.8],[32.6,46.63],[31.9,46.5]];
+const FRONT = [[38.3,49.9],[38.6,49.3],[38.0,48.6],[37.6,48.1],[37.4,47.4],[36.4,46.9],[34.0,46.2],[33.5,45.3]];
+const CITY_DEF = [
+  {n:"Київ", lon:30.52, lat:50.45, big:true},
+  {n:"Львів", lon:24.03, lat:49.84},
+  {n:"Харків", lon:36.25, lat:49.99},
+  {n:"Одеса", lon:30.73, lat:46.48},
+  {n:"Дніпро", lon:35.05, lat:48.47},
+  {n:"Вінниця", lon:28.48, lat:49.23}
+];
+const OBLAST_HINT = [[26.0,50.6],[29.0,48.6],[32.5,50.6],[33.5,47.9],[37.0,48.8],[26.5,49.0]];
+
+const W = 960, H = 660, PAD = 34;
+const KX = Math.cos(49*Math.PI/180);
+const T = {s:1, ox:0, oy:0};
+(function fit(){
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  for(const [lo,la] of OUTLINE){
+    const x=lo*KX, y=-la;
+    if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+  }
+  const s = Math.min((W-PAD*2)/(x1-x0), (H-PAD*2-24)/(y1-y0));
+  T.s = s;
+  T.ox = PAD + ((W-PAD*2)-(x1-x0)*s)/2 - x0*s;
+  T.oy = PAD + 14 + ((H-PAD*2-24)-(y1-y0)*s)/2 - y0*s;
+})();
+const P = (lon,lat) => ({x: lon*KX*T.s + T.ox, y: -lat*T.s + T.oy});
+const POLY = OUTLINE.map(([lo,la]) => { const p = P(lo,la); return [p.x,p.y]; });
+const BB = (() => {
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  for(const [x,y] of POLY){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  return {x0,x1,y0,y1};
+})();
+function inUA(x,y){
+  let inside = false;
+  for(let i=0,j=POLY.length-1;i<POLY.length;j=i++){
+    const [xi,yi]=POLY[i], [xj,yj]=POLY[j];
+    if((yi>y)!==(yj>y) && x < (xj-xi)*(y-yi)/(yj-yi)+xi) inside = !inside;
+  }
+  return inside;
+}
+
+/* ══════════════ ДОВІДНИКИ ══════════════ */
+const DIFF = {
+  easy:   {n:"Легко",  hp:0.85, dmg:0.80, inc:1.20, start:340, note:"Цілі слабші, грошей більше. Щоб розібратися в механіках."},
+  normal: {n:"Норма",  hp:1.00, dmg:1.00, inc:1.00, start:280, note:"Збалансований режим. Рекомендовано."},
+  hard:   {n:"Важко",  hp:1.20, dmg:1.20, inc:0.88, start:230, note:"Міцніші цілі, дорожча помилка. Для тих, хто вже тримав небо."}
+};
+
+const CLS = {drone:"дрон", cruise:"крилата", kab:"КАБ", ballistic:"балістика"};
+
+const TOWERS = {
+  mvg:    {name:"Мобільна вогнева група", short:"МВГ", cost:70, range:104, rate:3.0, dmg:1, hitscan:true,
+           hits:["drone"], color:"#7fe08a", desc:"Кулемет на пікапі. Дешево й швидко, але тільки по дронах."},
+  pzrk:   {name:"ПЗРК «Ігла» / Stinger", short:"ПЗРК", cost:165, range:142, rate:1.0, dmg:2.5,
+           hits:["drone","cruise","kab"], color:"#5fd0ff", desc:"Переносний ЗРК: дрони, крилаті ракети та КАБи."},
+  reb:    {name:"РЕБ «Буковель»", short:"РЕБ", cost:210, range:174, rate:0, dmg:0, aura:true,
+           hits:[], color:"#ffcb3d", desc:"Не стріляє. Глушить дрони: −55% швидкості, збиває з курсу."},
+  nasams: {name:"NASAMS", short:"NASAMS", cost:390, range:216, rate:0.95, dmg:3.5, locked:true,
+           hits:["drone","cruise","kab"], color:"#4d8bff", desc:"Велика зона, надійно по крилатих і КАБах."},
+  patriot:{name:"Patriot", short:"Patriot", cost:820, range:308, rate:0.8, dmg:6, locked:true,
+           hits:["drone","cruise","kab","ballistic"], color:"#c08bff", desc:"Єдине, що дістає балістику. Дорого й повільно."}
+};
+const TOWER_ORDER = ["mvg","pzrk","reb","nasams","patriot"];
+const TOWER_MAXLVL = 3;
+
+const ENEMIES = {
+  shahed:   {n:"Shahed-136",         cls:"drone",     hp:3, sp:34,  dmg:8,  pay:13, xp:6,  joy:0.25, r:9,  c:"#c1794a"},
+  orlan:    {n:"Орлан-10",           cls:"drone",     hp:2, sp:64,  dmg:0,  pay:22, xp:10, joy:0.20, r:8,  c:"#9aae6b", recon:true},
+  lancet:   {n:"«Ланцет»",           cls:"drone",     hp:2, sp:78,  dmg:12, pay:18, xp:9,  joy:0.25, r:8,  c:"#c07ab5"},
+  cruise:   {n:"Х-101 / «Калібр»",   cls:"cruise",    hp:5, sp:108, dmg:18, pay:36, xp:17, joy:0.60, r:8,  c:"#b9cbdd"},
+  kab:      {n:"КАБ",                cls:"kab",       hp:3, sp:132, dmg:22, pay:30, xp:15, joy:0.50, r:8,  c:"#ffcb3d"},
+  ballistic:{n:"«Іскандер»",         cls:"ballistic", hp:7, sp:206, dmg:34, pay:75, xp:32, joy:1.20, r:9,  c:"#ff5a6e"},
+  kinzhal:  {n:"«Кинджал» (МіГ-31К)",cls:"ballistic", hp:9, sp:248, dmg:40, pay:100,xp:42, joy:1.60, r:10, c:"#ff9a3d"}
+};
+
+/* постійні контракти штабу — за ₴ */
+const SHOP = [
+  {id:"radar",    n:"Радар раннього виявлення", d:"+8% радіус усіх засобів",     max:5, cost:l=>120+70*l},
+  {id:"ammo",     n:"Постачання боєприпасів",   d:"+10% швидкострільність",      max:5, cost:l=>110+65*l},
+  {id:"crew",     n:"Вишкіл розрахунків",       d:"+12% шкоди по цілях",         max:5, cost:l=>140+80*l},
+  {id:"shelter",  n:"Укриття та бомбосховища",  d:"−9% шкоди містам",            max:4, cost:l=>130+75*l},
+  {id:"crews",    n:"Комунальні бригади",       d:"+35% швидкість відбудови",    max:3, cost:l=>110+70*l},
+  {id:"volun",    n:"Волонтерський рух",        d:"+25% ₴ з кожної збитої цілі", max:2, cost:l=>170+130*l},
+  {id:"u_nasams", n:"Контракт на NASAMS",       d:"відкриває NASAMS",            max:1, unlock:"nasams",  need:3, cost:()=>430},
+  {id:"u_patriot",n:"Контракт на Patriot",      d:"відкриває Patriot",           max:1, unlock:"patriot", need:6, cost:()=>950}
+];
+
+/* перки за рівень командування — без грошей, тільки вибір */
+const PERKS = [
+  {id:"p_range", n:"Радарне поле",        d:"+10% радіус усіх засобів",                 max:3},
+  {id:"p_rate",  n:"Логістика БК",         d:"+12% швидкострільність",                   max:3},
+  {id:"p_dmg",   n:"Злагоджений розрахунок",d:"+15% шкоди по цілях",                     max:3},
+  {id:"p_city",  n:"Бетон і підвали",      d:"−12% шкоди містам",                        max:3},
+  {id:"p_pay",   n:"Трофейні бригади",     d:"+20% ₴ за кожну збиту ціль",               max:3},
+  {id:"p_rep",   n:"Аварійні бригади",     d:"відбудова на 50% швидша і на 20% дешевша", max:2},
+  {id:"p_cost",  n:"Мобільність",          d:"−15% вартість нових позицій",              max:2},
+  {id:"p_mood",  n:"Єдність",              d:"+80% радості населення від збиттів",       max:2},
+  {id:"p_info",  n:"Інформполітика",       d:"настрій падає на 30% повільніше",          max:2},
+  {id:"p_far",   n:"Далекобійна ППО",      d:"NASAMS і Patriot: +20% радіус",            max:2},
+  {id:"p_reb",   n:"Широкий спектр РЕБ",   d:"РЕБ сповільнює ще й крилаті ракети",       max:1},
+  {id:"p_fund",  n:"Резервний фонд",       d:"+1 безкоштовний резерв проти «Орєшніка»",  max:3},
+  {id:"p_xp",    n:"Аналітичний центр",    d:"+25% досвіду за збиття",                   max:2},
+  {id:"p_lend",  n:"Ленд-ліз",             d:"одноразово: +350 ₴ негайно",               max:3, instant:true}
+];
+
+/* рішення кабінету: настрій проти грошей і ризику */
+const DECISIONS = [
+  {id:"payout",  n:"Пряма виплата громадянам", cost:190, mood:+18,
+   d:"Гроші людям одразу — рейтинг злітає, бюджет худне."},
+  {id:"tariff",  n:"Заморозити тарифи", cost:0, mood:+12, eff:{tax:0.70, waves:2},
+   d:"Популярно. Але −30% податків дві хвилі."},
+  {id:"curfew",  n:"Скасувати комендантську годину", cost:0, mood:+10, eff:{cityDmg:1.25, waves:2},
+   d:"Люди на вулицях — і втрати від влучань на 25% більші дві хвилі."},
+  {id:"promise", n:"Пообіцяти швидку перемогу", cost:0, mood:+22, promise:true,
+   d:"Ризик: якщо за 2 хвилі пропустите 3+ цілі — розчарування, −35 настрою."},
+  {id:"taxes",   n:"Підвищити податки", cost:0, mood:-14, eff:{tax:1.45, waves:3},
+   d:"Непопулярно, зате +45% податків три хвилі."},
+  {id:"mobil",   n:"Мобілізаційна кампанія", cost:130, mood:-8, eff:{cost:0.75, waves:2}, gift:"mvg",
+   d:"Мінус настрій, зате −25% ціни позицій і одна МВГ у подарунок."},
+  {id:"award",   n:"Нагородити оборонців", cost:95, mood:+9, eff:{dmg:1.12, waves:2},
+   d:"Тепло в тилу і +12% шкоди на дві хвилі."},
+  {id:"rebuild", n:"Відбудова шкіл і лікарень", cost:230, mood:+16, heal:40,
+   d:"+40 міцності всім містам одразу."},
+  {id:"parade",  n:"Гучний парад", cost:160, mood:+14, eff:{pay:0.90, waves:2},
+   d:"Видовище коштує: −10% ₴ за збиття дві хвилі."},
+  {id:"silence", n:"Інформаційна тиша", cost:0, mood:0, eff:{noDrop:true, pay:0.82, waves:1},
+   d:"Одну хвилю настрій не падає взагалі — ціною −18% ₴ за збиття."},
+  {id:"volfund", n:"Національний збір", cost:0, mood:-6, gain:260,
+   d:"+260 ₴ негайно, але люди втомилися від зборів."}
+];
+
+const RANKS = [
+  [1,"Новобранець","Перша ніч під тривогою."],
+  [4,"Оператор ППО","Розрахунок працює злагоджено."],
+  [7,"Командир взводу","Небо тримається на вашій сітці позицій."],
+  [10,"Комбат ППО","Крилаті йдуть щільно — а ви ще стоїте."],
+  [14,"Ас перехоплення","Балістика вже не проходить наосліп."],
+  [20,"Легенда неба","Такий щит не пробивають."]
+];
+
+/* ══════════════ СТАН ══════════════ */
+const cv = document.getElementById("cv");
+/* На малому екрані полотно 960×660 стискається вдвічі й більше — тож мітки, вежі,
+   цілі й монети малюємо більшими, щоб вони лишалися читабельними й влучними під палець. */
+let S = 1;
+function measure(){
+  const r = cv.getBoundingClientRect();
+  if(r.width > 0) S = Math.max(1, Math.min(2.1, 720 / r.width));
+  coinTgtAt = -1e9;
+}
+const ctx = cv.getContext("2d");
+cv.width = W*2; cv.height = H*2; ctx.scale(2,2);
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let G;
+function reset(diff){
+  const d = DIFF[diff || (G && G.diff) || "normal"];
+  G = {
+    diff: diff || (G && G.diff) || "normal", D: d,
+    money: d.start, mood: 60, xp: 0, level: 1, streak: 0, best: 0,
+    wave: 0, phase: "prep", prepLeft: 24, prepMax: 24,
+    spawnQueue: [], waveTotal: 0, waveLeaks: 0, waveJoy: 0, nextWave: null,
+    enemies: [], towers: [], shots: [], drops: [], fx: [], texts: [], tracers: [],
+    kills: 0, leaks: 0, over: false, paused: false, speed: 1,
+    place: null, sel: null, hover: null, mouse: null, ghost: null,
+    unlocked: {mvg:1, pzrk:1, reb:1, nasams:0, patriot:0},
+    up: {radar:0, ammo:0, crew:0, shelter:0, crews:0, volun:0, u_nasams:0, u_patriot:0},
+    perk: {}, effects: [], promise: null, fund: 0,
+    cabUsed: -1, lastChance: true,
+    cities: CITY_DEF.map(c => {
+      const pt = P(c.lon,c.lat);
+      const max = c.big ? 150 : 100;
+      return {n:c.n, x:pt.x, y:pt.y, max, hp:max, big:!!c.big, flash:0, rep:false};
+    }),
+    modal: null, redAlert: 0, mig: null, cd: {mig:75, ore:60, aid:35},
+    log: [], tips: {}, t: 0, alarm: 0, sweep: 0, shake: 0,
+    stats: {by:{}, earned:0, spentBuild:0, spentRep:0, spentShop:0, built:0, oreHits:0, decisions:0, aidTaken:0, aidRefused:0}
+  };
+  for(const p of PERKS) G.perk[p.id] = 0;
+  cityRows = null;
+  G.nextWave = previewWave(1);
+  say(`Режим «${d.n}». Бюджет ${d.start} ₴. Час на підготовку — ${Math.round(G.prepLeft)} с.`, "good");
+  dirty.all = true;
+}
+
+const say = (txt, k="") => {
+  G.log.push({txt, k, w:G.wave});
+  if(G.log.length > 60) G.log.shift();
+  dirty.log = true;
+};
+const dirty = {rail:true, log:true, all:true};
+const refresh = () => { dirty.rail = true; };
+
+/* ══════════════ МНОЖНИКИ ══════════════ */
+function effMul(key){
+  let m = 1;
+  for(const e of G.effects) if(e.mods[key] != null) m *= e.mods[key];
+  return m;
+}
+const effFlag = key => G.effects.some(e => e.mods[key]);
+const mRange = () => 1 + 0.08*G.up.radar + 0.10*G.perk.p_range;
+const mRate  = () => (1 + 0.10*G.up.ammo + 0.12*G.perk.p_rate) * effMul("rate");
+const mDmg   = () => (1 + 0.12*G.up.crew + 0.15*G.perk.p_dmg) * effMul("dmg");
+const mCost  = () => (1 - 0.15*G.perk.p_cost) * effMul("cost");
+const moodMul = () => 0.70 + G.mood/100*0.60;
+const streakMul = () => 1 + Math.min(10, Math.floor(G.streak/5))*0.1;
+const payMul = () => moodMul() * streakMul() * (1 + 0.20*G.perk.p_pay) * effMul("pay") * G.D.inc;
+const cityDmgMul = () => Math.max(0.15, (1 - 0.09*G.up.shelter - 0.12*G.perk.p_city)) * effMul("cityDmg") * G.D.dmg;
+const moodDropMul = () => effFlag("noDrop") ? 0 : (1 - 0.30*G.perk.p_info);
+const towerRange = t => TOWERS[t.k].range * mRange() *
+  (1 + 0.22*((t.lvl||1)-1)) * ((t.k==="nasams"||t.k==="patriot") ? 1 + 0.20*G.perk.p_far : 1);
+const towerDmg = t => TOWERS[t.k].dmg * mDmg() * (1 + 0.25*((t.lvl||1)-1));
+const towerCost = k => Math.max(10, Math.round(TOWERS[k].cost * mCost()));
+const upCost = t => Math.round(TOWERS[t.k].cost * 0.8 * (t.lvl||1) * mCost());
+const xpNeed = lvl => Math.round(70 * Math.pow(lvl, 1.3));
+
+function addMoney(n, x, y, label){
+  G.money += n;
+  if(n > 0) G.stats.earned += n;
+  if(x != null) G.texts.push({x, y, t: (label || `+${Math.round(n)} ₴`), c:"#8fe0bd", life:1});
+  dirty.rail = true;
+}
+function addMood(n, why){
+  if(n < 0) n *= moodDropMul();
+  const before = Math.round(G.mood);
+  G.mood = Math.max(0, Math.min(100, G.mood + n));
+  const after = Math.round(G.mood);
+  if(why && after !== before) say(`Настрій ${n>0?"↑":"↓"} ${after}% — ${why}`, n>0?"good":"hit");
+}
+function addXP(n){
+  G.xp += n * (1 + 0.25*G.perk.p_xp);
+  while(G.xp >= xpNeed(G.level)){
+    G.xp -= xpNeed(G.level);
+    G.level++;
+    G.pendingPerks = (G.pendingPerks || 0) + 1;
+  }
+}
+
+/* ══════════════ ХВИЛІ ══════════════ */
+function previewWave(n){
+  const c = {};
+  c.shahed = 4 + Math.floor(n*1.8);
+  if(n >= 2) c.cruise = Math.ceil(n/2.5);
+  if(n >= 3) c.orlan = 1 + Math.floor(n/5);
+  if(n >= 4) c.lancet = Math.floor((n-2)/2);
+  if(n >= 6) c.kab = Math.floor((n-4)/2);
+  if(n >= 8) c.ballistic = Math.floor((n-6)/2);
+  for(const k in c) if(!c[k]) delete c[k];
+  return c;
+}
+function buildWave(n){
+  const comp = previewWave(n);
+  const q = [];
+  for(const type in comp) for(let i=0;i<comp[type];i++) q.push({type});
+  for(let i=q.length-1;i>0;i--){ const j = (Math.random()*(i+1))|0; [q[i],q[j]] = [q[j],q[i]]; }
+  let t = 0;
+  const gap = Math.max(0.42, 1.5 - n*0.05);
+  for(const e of q){ e.at = t; t += gap*(0.5 + Math.random()); }
+  return q;
+}
+const hpScale = n => (1 + 0.09*(n-1)) * G.D.hp;
+
+function startWave(){
+  if(G.phase !== "prep" || G.over) return;
+  const bonus = Math.round(G.prepLeft * 4);
+  if(bonus > 0){ addMoney(bonus); say(`Дострокова готовність: +${bonus} ₴`, "cash"); }
+  G.wave++;
+  G.spawnQueue = buildWave(G.wave);
+  G.waveTotal = G.spawnQueue.length;
+  G.waveLeaks = 0; G.waveJoy = 0;
+  G.phase = "wave"; G.waveT = 0;
+  G.alarm = 1;
+  SFX.siren();
+  say(`ХВИЛЯ ${G.wave}. Повітряна тривога — ${G.waveTotal} цілей.`, "hit");
+  dirty.rail = true;
+}
+
+function endWave(){
+  const alive = G.cities.filter(c => c.hp > 0).length;
+  const tax = Math.round((45 + 14*G.wave) * moodMul() * effMul("tax") * (alive/G.cities.length) * G.D.inc);
+  addMoney(tax);
+  say(`Хвилю ${G.wave} відбито. Податкові надходження: +${tax} ₴`, "cash");
+  if(G.waveLeaks === 0){
+    const perfect = 40 + 12*G.wave;
+    addMoney(perfect);
+    addMood(+6, "хвилю відбито без жодного влучання");
+    say(`Ідеальна хвиля: +${perfect} ₴ премії`, "good");
+  }
+  /* ефекти рішень живуть хвилями */
+  for(const e of G.effects) e.waves--;
+  const gone = G.effects.filter(e => e.waves <= 0);
+  for(const e of gone) say(`Ефект «${e.n}» вичерпано`);
+  G.effects = G.effects.filter(e => e.waves > 0);
+  /* обіцянка швидкої перемоги */
+  if(G.promise){
+    G.promise.waves--;
+    if(G.promise.leaks >= 3){
+      addMood(-35, "обіцянка швидкої перемоги не справдилася");
+      say("Суспільство розчароване невиконаною обіцянкою", "hit");
+      G.promise = null;
+    } else if(G.promise.waves <= 0){
+      addMood(+8, "обіцянку виконано — небо трималося");
+      G.promise = null;
+    }
+  }
+  G.phase = "prep";
+  G.prepMax = G.prepLeft = Math.min(34, 20 + G.wave);
+  G.nextWave = previewWave(G.wave + 1);
+  SFX.clear();
+  saveGame();
+  if(G.pendingPerks) openPerkDraft();
+  else if(G.wave === 2) tip("cab", "Скликайте Кабінет рішень: одне рішення на хвилю. Настрій коштує грошей або ризику — але множить усі доходи.");
+  dirty.rail = true;
+}
+
+/* ══════════════ СПАВН ══════════════ */
+function spawnPoint(type){
+  const d = ENEMIES[type];
+  let side;
+  if(d.cls === "ballistic" || d.cls === "kab") side = Math.random() < 0.8 ? "east" : "northeast";
+  else if(d.cls === "cruise") side = Math.random() < 0.5 ? "north" : "south";
+  else side = ["north","east","south","northeast"][(Math.random()*4)|0];
+  const m = 42;
+  switch(side){
+    case "north": return {x: BB.x0 + Math.random()*(BB.x1-BB.x0), y: BB.y0 - m};
+    case "east":  return {x: BB.x1 + m, y: BB.y0 + 40 + Math.random()*(BB.y1-BB.y0-140)};
+    case "south": return {x: BB.x0 + 180 + Math.random()*(BB.x1-BB.x0-180), y: BB.y1 + m};
+    default:      return {x: BB.x1 + m*0.7, y: BB.y0 - m*0.7};
+  }
+}
+function pickCity(from){
+  const alive = G.cities.filter(c => c.hp > 0);
+  if(!alive.length) return null;
+  const scored = alive.map(c => ({c, w: (c.big?2.4:1) * 1/(60 + Math.hypot(c.x-from.x, c.y-from.y)*0.55)}));
+  let tot = scored.reduce((s,o) => s+o.w, 0), r = Math.random()*tot;
+  for(const o of scored){ r -= o.w; if(r <= 0) return o.c; }
+  return alive[0];
+}
+function spawn(type){
+  const d = ENEMIES[type];
+  const s = spawnPoint(type);
+  const city = pickCity(s);
+  if(!city) return;
+  const hp = d.hp * hpScale(G.wave);
+  G.enemies.push({
+    type, cls:d.cls, x:s.x, y:s.y, hp, max:hp,
+    sp: d.sp*(0.92 + Math.random()*0.16), r:d.r, tx:city,
+    slow:0, jam:0, dead:false, ang:0, trail:[], wob:Math.random()*6.28
+  });
+}
+
+/* ══════════════ ОНОВЛЕННЯ ══════════════ */
+function update(dt){
+  G.t += dt; G.sweep += dt*0.42;
+  if(G.alarm > 0) G.alarm = Math.max(0, G.alarm - dt*0.5);
+  events(dt);
+  rebuild(dt);
+
+  if(G.phase === "prep"){
+    G.prepLeft -= dt;
+    if(G.prepLeft <= 0){ G.prepLeft = 0; startWave(); }
+  } else {
+    G.waveT += dt;
+    while(G.spawnQueue.length && G.spawnQueue[0].at <= G.waveT) spawn(G.spawnQueue.shift().type);
+  }
+
+  for(const e of G.enemies) e.slow = 0;
+  for(const t of G.towers){
+    if(!TOWERS[t.k].aura) continue;
+    const R = towerRange(t);
+    for(const e of G.enemies){
+      if(e.dead) continue;
+      const jammable = e.cls === "drone" || (G.perk.p_reb && e.cls === "cruise");
+      if(!jammable) continue;
+      if(Math.hypot(e.x-t.x, e.y-t.y) < R){
+        e.slow = e.cls === "drone" ? 0.55 : 0.25;
+        if(!e.jam && e.cls === "drone" && Math.random() < 0.27*dt){
+          e.jam = 1; e.jamT = 1.4 + Math.random();
+          say(`РЕБ збив з курсу ${ENEMIES[e.type].n}`, "good");
+        }
+      }
+    }
+  }
+
+  for(const e of G.enemies){
+    if(e.dead) continue;
+    const spd = e.sp*(1 - e.slow);
+    if(e.jam){
+      e.jamT -= dt; e.wob += dt*5;
+      e.x += Math.cos(e.wob)*spd*dt; e.y += Math.sin(e.wob*1.3)*spd*dt;
+      e.ang = e.wob;
+      if(e.jamT <= 0) kill(e);
+      continue;
+    }
+    if(!e.tx || e.tx.hp <= 0) e.tx = pickCity(e);
+    if(!e.tx){ e.dead = true; continue; }
+    const dx = e.tx.x-e.x, dy = e.tx.y-e.y, L = Math.hypot(dx,dy) || 1;
+    e.ang = Math.atan2(dy,dx);
+    e.x += dx/L*spd*dt; e.y += dy/L*spd*dt;
+    e.trail.push(e.x, e.y);
+    if(e.trail.length > (e.cls==="ballistic"?36:18)) e.trail.splice(0,2);
+    if(L < 9) impact(e);
+  }
+
+  for(const t of G.towers){
+    const T_ = TOWERS[t.k];
+    if(T_.aura) continue;
+    t.cd -= dt;
+    t.rec = Math.max(0, t.rec - dt*4);
+    const R = towerRange(t);
+    if(t.cd <= 0){
+      let best = null, score = -1;
+      for(const e of G.enemies){
+        if(e.dead || !T_.hits.includes(e.cls)) continue;
+        if(Math.hypot(e.x-t.x, e.y-t.y) > R) continue;
+        const inc = e.tx ? Math.hypot(e.tx.x-e.x, e.tx.y-e.y) : 999;
+        const s = 1000 - inc + (e.cls==="ballistic"?400:0) + (e.cls==="kab"?200:0);
+        if(s > score){ score = s; best = e; }
+      }
+      if(best){
+        t.cd = 1/(T_.rate*mRate());
+        t.rec = 1;
+        t.ang = Math.atan2(best.y-t.y, best.x-t.x);
+        const dmg = towerDmg(t);
+        if(T_.hitscan){
+          G.tracers.push({x1:t.x, y1:t.y, x2:best.x, y2:best.y, life:0.09, c:T_.color});
+          hurt(best, dmg); SFX.gun();
+        } else {
+          G.shots.push({x:t.x, y:t.y, tg:best, sp:340+T_.dmg*22, dmg, c:T_.color, life:3, trail:[]});
+          SFX.missile();
+        }
+      }
+    }
+  }
+
+  for(const s of G.shots){
+    s.life -= dt;
+    const e = s.tg;
+    if(!e || e.dead || s.life <= 0){ s.gone = true; continue; }
+    const dx = e.x-s.x, dy = e.y-s.y, L = Math.hypot(dx,dy) || 1;
+    const step = s.sp*dt;
+    s.ang = Math.atan2(dy,dx);
+    if(L <= step+4){ s.x = e.x; s.y = e.y; hurt(e, s.dmg); s.gone = true; boom(e.x, e.y, 0.7, s.c); }
+    else { s.x += dx/L*step; s.y += dy/L*step; }
+    s.trail.push(s.x, s.y);
+    if(s.trail.length > 14) s.trail.splice(0,2);
+  }
+  G.shots = G.shots.filter(s => !s.gone);
+
+  for(const d of G.drops){
+    d.t += dt;
+    if(d.t < 0.38){                       // підкид на місці влучання
+      d.x += d.vx*dt; d.y += d.vy*dt; d.vy += 210*dt;
+    } else {                              // політ до бюджету
+      const tg = coinTarget();
+      const dx = tg.x-d.x, dy = tg.y-d.y, L = Math.hypot(dx,dy) || 1;
+      d.sp = Math.min(1150, (d.sp||150) + 1600*dt);
+      d.fly = 1;
+      if(L <= d.sp*dt + 14){ collect(d); continue; }
+      d.x += dx/L*d.sp*dt; d.y += dy/L*d.sp*dt;
+    }
+  }
+  G.drops = G.drops.filter(d => !d.gone);
+
+  for(const f of G.fx){ f.life -= dt; f.x += f.vx*dt; f.y += f.vy*dt; f.vy += 40*dt; f.vx *= 0.98; }
+  G.fx = G.fx.filter(f => f.life > 0);
+  for(const t of G.tracers) t.life -= dt;
+  G.tracers = G.tracers.filter(t => t.life > 0);
+  for(const x of G.texts){ x.life -= dt; x.y -= 22*dt; }
+  G.texts = G.texts.filter(x => x.life > 0);
+  for(const c of G.cities) if(c.flash > 0) c.flash -= dt*2;
+  if(G.shake > 0) G.shake = Math.max(0, G.shake - dt*2.4);
+
+  G.enemies = G.enemies.filter(e => !e.dead);
+
+  if(G.phase === "wave" && !G.spawnQueue.length && !G.enemies.length && !G.mig && !G.modal) endWave();
+  if(G.cities.every(c => c.hp <= 0) && !G.over && !G.modal) collapse();
+}
+
+/* ─── плавна відбудова ─── */
+function rebuild(dt){
+  let spent = 0;
+  for(const c of G.cities){
+    if(!c.rep) continue;
+    if(c.hp >= c.max){ c.rep = false; dirty.rail = true; continue; }
+    const ruins = c.hp <= 0;
+    const speed = 2.6 * (0.6 + G.mood/100*0.8) * (1 + 0.35*G.up.crews) * (1 + 0.5*G.perk.p_rep) * (ruins?0.5:1);
+    const price = 1.15 * (ruins?2:1) * (1 - 0.2*G.perk.p_rep);
+    const want = speed*dt;
+    const cost = want*price;
+    if(G.money >= cost){
+      G.money -= cost; spent += cost;
+      const was = c.hp;
+      c.hp = Math.min(c.max, c.hp + want);
+      if(was <= 0 && c.hp > 0) say(`Місто ${c.n} повертається до життя`, "good");
+    } else {
+      c.rep = false;
+      tip("norep", "Бюджет вичерпано — відбудову зупинено. Гроші дають збиті цілі, трофеї й податки наприкінці хвилі.");
+      dirty.rail = true;
+    }
+  }
+  if(spent){ G.stats.spentRep += spent; dirty.rail = true; }
+}
+
+/* ─── бій ─── */
+function hurt(e, d){ e.hp -= d; if(e.hp <= 0) kill(e); }
+function kill(e){
+  if(e.dead) return;
+  e.dead = true;
+  G.kills++; G.streak++;
+  const d = ENEMIES[e.type];
+  G.stats.by[e.type] = (G.stats.by[e.type]||0) + 1;
+  boom(e.x, e.y, e.cls==="ballistic"?1.5:1, d.c);
+  SFX.boom(e.cls==="ballistic"?1.5:1);
+  const pay = Math.round(d.pay * payMul() * (1 + 0.25*G.up.volun));
+  dropCoin(e.x, e.y, pay, d.cls !== "drone");
+  addXP(d.xp);
+  const joy = d.joy * (1 + 0.8*G.perk.p_mood);
+  if(G.waveJoy < 12){ G.waveJoy += joy; addMood(+joy); }
+  if(Math.random() < 0.25) dropCoin(e.x+10, e.y+6, Math.max(5, Math.round(pay*0.8)), true);
+  if(e.cls === "ballistic" || e.cls === "cruise") say(`Збито ${d.n} (+${pay} ₴)`, "cash");
+  if(G.kills === 1) tip("kill", "Збита ціль лишає монети — вони самі летять на ваш баланс. Клік по монеті забирає її миттєво.");
+}
+function impact(e){
+  e.dead = true;
+  const d = ENEMIES[e.type];
+  const c = e.tx;
+  G.streak = 0;
+  if(d.recon){
+    G.leaks++; G.waveLeaks++;
+    if(G.promise) G.promise.leaks++;
+    addMood(-2, `${d.n} провів розвідку`);
+    G.spawnQueue.push({type:"shahed", at:G.waveT+1.5});
+    G.waveTotal++;
+    boom(c.x, c.y, 0.6, "#9aae6b");
+    return;
+  }
+  const dmg = d.dmg * cityDmgMul() * (1 + 0.02*G.wave);
+  c.hp = Math.max(0, c.hp - dmg);
+  c.flash = 1;
+  G.leaks++; G.waveLeaks++;
+  if(G.promise) G.promise.leaks++;
+  G.alarm = 1; G.shake = 1;
+  SFX.cityHit();
+  boom(c.x, c.y, 1.8, "#ff5a6e");
+  G.texts.push({x:c.x, y:c.y-16, t:`−${Math.round(dmg)}`, c:"#ff8f99", life:1.4});
+  addMood(-(2 + dmg/9), `влучання по місту ${c.n}`);
+  say(`Влучання по місту ${c.n}: −${Math.round(dmg)} міцності${c.hp<=0?" · місто вибуло":""}`, "hit");
+  tip("leak", "Ціль прорвалася: місто втратило міцність, серія збиттів обнулилася, настрій упав. Увімкніть відбудову 🔧 у модулі «Міста».");
+  dirty.rail = true;
+}
+function boom(x, y, k, c){
+  const n = Math.round(10*k) + 6;
+  for(let i=0;i<n;i++){
+    const a = Math.random()*6.283, v = (40 + Math.random()*150)*k;
+    G.fx.push({x, y, vx:Math.cos(a)*v, vy:Math.sin(a)*v, life:0.3+Math.random()*0.5*k, c, r:1+Math.random()*2.4*k});
+  }
+  const rl = 0.28*k + 0.14;
+  G.fx.push({x, y, vx:0, vy:0, life:rl, life0:rl, c, ring:true, r:4, k});
+}
+function dropCoin(x, y, n, big){
+  G.drops.push({
+    x, y, n: Math.max(1, Math.round(n)), big: !!big, t: 0, ph: Math.random()*6.283,
+    vx: (Math.random()-0.5)*70, vy: -60 - Math.random()*50
+  });
+}
+/* центр чипа «₴ бюджет» у координатах полотна — саме туди летять монети */
+let coinTgt = {x:56, y:28}, coinTgtAt = -1e9;
+function coinTarget(){
+  const now = performance.now();
+  if(now - coinTgtAt > 400){
+    coinTgtAt = now;
+    try{
+      const a = cv.getBoundingClientRect(), b = el.money.getBoundingClientRect();
+      if(a.width && b.width){
+        coinTgt = {
+          x: (b.left + b.width/2 - a.left) * (W/a.width),
+          y: (b.top + b.height/2 - a.top) * (H/a.height)
+        };
+      }
+    }catch(e){}
+  }
+  return coinTgt;
+}
+let pulseAt = 0;
+function pulseMoney(){
+  const now = performance.now();
+  if(now - pulseAt < 130) return;
+  pulseAt = now;
+  const chip = el.money.parentElement;
+  chip.classList.remove("hit");
+  void chip.offsetWidth;
+  chip.classList.add("hit");
+}
+function collect(d){
+  if(d.gone) return;
+  d.gone = true;
+  const tg = coinTarget();
+  G.money += d.n;
+  G.stats.earned += d.n;
+  G.texts.push({x: tg.x, y: tg.y + 22, t: `+${d.n} ₴`, c: "#ffd76a", life: 0.85});
+  SFX.coin();
+  pulseMoney();
+  dirty.rail = true;
+}
+
+/* ══════════════ ПОДІЇ ══════════════ */
+function events(dt){
+  if(G.modal || G.over) return;
+  for(const k in G.cd) G.cd[k] = Math.max(0, G.cd[k] - dt);
+  if(G.phase === "wave" && G.wave >= 7 && !G.mig && G.cd.mig <= 0 && Math.random() < 0.05*dt) migTakeoff();
+  if(G.wave >= 9 && G.cd.ore <= 0 && Math.random() < 0.035*dt) oreshnikThreat();
+  if(G.phase === "prep" && G.wave >= 3 && G.cd.aid <= 0 && Math.random() < 0.06*dt) partnersCall();
+  if(G.mig){
+    G.mig.t -= dt;
+    if(G.mig.t <= 0){
+      for(let i=0;i<G.mig.n;i++) spawn("kinzhal");
+      SFX.missile();
+      say(`ПУСК! «Кинджалів» у повітрі: ${G.mig.n}. Дістає лише Patriot.`, "hit");
+      G.alarm = 1; G.mig = null;
+    }
+  }
+}
+function migTakeoff(){
+  G.cd.mig = 85 + Math.random()*70;
+  const lead = 11 + Math.random()*8;
+  G.mig = {t:lead, n:1 + (G.wave>=12?1:0) + (Math.random()<0.35?1:0), max:lead};
+  G.alarm = 1; SFX.siren();
+  say(`РОЗВІДКА: зліт МіГ-31К — носія «Кинджалів». Пуск за ~${Math.round(lead)} с`, "hit");
+}
+
+function oreshnikThreat(){
+  G.cd.ore = 180 + Math.random()*140;
+  G.redAlert = 1; G.alarm = 1; SFX.siren();
+  const cost = Math.floor(G.money*0.3);
+  const free = G.fund > 0;
+  const acc = G.luckBets ? Math.round(G.luckWins/G.luckBets*100) : null;
+  ask({
+    tone:"alarm",
+    eyebrow:"Супутникова розвідка · пріоритет «блискавка»",
+    title:"Готується пуск «Орєшніка»",
+    quote:"«Фіксуємо підготовку пускової. Тип бойової частини невідомий. Рішення потрібне зараз.»",
+    body:`Резерв — це <b>30% бюджету</b> (${cost} ₴) на розосередження сил, укриття й додаткові розрахунки.
+          Гроші списуються одразу, незалежно від того, чим усе скінчиться.${free?"<br><b>Резервний фонд покриє цю витрату безкоштовно.</b>":""}`,
+    odds:{p:0.20, bad:"масований удар", good:"демонстраційний пуск"},
+    note:`Математика ставки: без резерву очікувані втрати = 0,20 × шкода; з резервом = ціна резерву + 0,04 × шкода.
+          Кожен пуск — незалежна подія, попередні результати шансів не змінюють.`,
+    ledger:[`ставок: ${G.luckBets||0}`, `вгадано: ${G.luckWins||0}`, acc!==null?`точність: ${acc}%`:null,
+            G.fund?`резервний фонд: ${G.fund}`:null],
+    timer:18, timeout:"skip",
+    choices:[
+      {t:"Задіяти резерв", s:"Розосередити сили й підняти укриття — шкода впаде до 20%.",
+       tag: free ? "безкоштовно (фонд)" : `−${cost} ₴`, k:"react"},
+      {t:"Не реагувати", s:"Зберегти бюджет і покластися на 80%, що це демонстрація.", tag:"0 ₴", k:"skip", bold:true}
+    ],
+    onPick: k => resolveOreshnik(k, cost, free)
+  });
+}
+function resolveOreshnik(k, cost, free){
+  const reacted = k === "react";
+  G.luckBets = G.luckBets || 0; G.luckWins = G.luckWins || 0;
+  if(reacted){
+    if(free){ G.fund--; say("Резервний фонд покрив витрати на резерв", "good"); }
+    else { G.money = Math.max(0, G.money - cost); }
+    G.luckBets++;
+    SFX.buy();
+  }
+  const roll = Math.random();
+  const strong = roll < 0.20;
+  const rollLine = `Кидок: <b>${(roll*100).toFixed(1)}</b> проти порогу <b>20,0</b> → ${strong?"масований удар":"демонстраційний пуск"}`;
+  if(!strong){
+    G.redAlert = 0;
+    addMood(reacted ? +3 : +1, reacted ? "держава підготувалася завчасно" : "нерви витримали");
+    tell({
+      tone:"warn", eyebrow:"Відбій тривоги",
+      title: reacted ? "Це була демонстрація" : "Порожня загроза",
+      quote:"«Виріб пішов на полігон. Втрат немає.»",
+      body: `${rollLine}.<br>${reacted
+        ? "Резерв витрачено дарма — але саме так працює страхування: ви платили, щоб 20% не стали катастрофою."
+        : "Ви не витратили нічого — цього разу 80% спрацювали на вас."}`,
+      ledger:[`ставок: ${G.luckBets}`, `вгадано: ${G.luckWins}`],
+      ok:"Далі"
+    });
+    return;
+  }
+  if(reacted) G.luckWins++;
+  G.stats.oreHits++;
+  G.redAlert = 1; G.shake = 1.6; SFX.cityHit();
+  const mult = (reacted ? 0.2 : 1) * cityDmgMul();
+  const alive = G.cities.filter(c => c.hp > 0);
+  const main = alive.length ? alive[(Math.random()*alive.length)|0] : null;
+  let total = 0, lost = 0;
+  if(main){
+    const d = 64*mult;
+    main.hp = Math.max(0, main.hp-d); main.flash = 1; total += d;
+    boom(main.x, main.y, 2.6, "#ff9a3d");
+    for(const c of G.cities){
+      if(c === main || c.hp <= 0) continue;
+      if(Math.hypot(c.x-main.x, c.y-main.y) < 240){
+        const dd = 18*mult;
+        c.hp = Math.max(0, c.hp-dd); c.flash = 1; total += dd;
+        boom(c.x, c.y, 1.1, "#ff9a3d");
+      }
+    }
+    if(!reacted){
+      for(const t of [...G.towers]){
+        if(Math.hypot(t.x-main.x, t.y-main.y) < 150 && Math.random() < 0.4){
+          G.towers = G.towers.filter(x => x !== t); lost++; boom(t.x, t.y, 1, "#ff5a6e");
+        }
+      }
+    }
+  }
+  G.streak = 0;
+  G.leaks++; G.waveLeaks++;
+  if(G.promise) G.promise.leaks += 2;
+  addMood(reacted ? +9 : -18, reacted ? "удар зустріли підготовленими" : "удар застав країну зненацька");
+  say(`«ОРЄШНІК»: удар по ${main?main.n:"—"}, −${Math.round(total)} міцності${lost?`, втрачено позицій: ${lost}`:""}`, "hit");
+  tell({
+    tone:"alarm", eyebrow:"Наслідки удару",
+    title: reacted ? "Удар прийшовся по розосередженому тилу" : "Прямий удар без підготовки",
+    quote: reacted ? "«Резерв спрацював: більшість об'єктів винесли заздалегідь.»"
+                   : "«Епіцентр у житловій забудові. Рятувальники на місці.»",
+    body:`${rollLine}.<br>Втрати міцності: <b>${Math.round(total)}</b>${lost?`, знищено позицій ППО: <b>${lost}</b>`:""}.
+          ${reacted ? "Ставка окупилася: без резерву втрати були б уп'ятеро більшими."
+                    : "Саме той випадок, проти якого страхує резерв."}`,
+    ledger:[`ставок: ${G.luckBets}`, `вгадано: ${G.luckWins}`, `ударів: ${G.stats.oreHits}`],
+    ok:"Прийняти", after:()=>{ G.redAlert = 0; }
+  });
+  dirty.rail = true;
+}
+
+function partnersCall(){
+  G.cd.aid = 140 + Math.random()*110;
+  const pack = Math.round((260 + G.wave*55) * G.D.inc);
+  const withPatriot = !G.unlocked.patriot && G.wave >= 6 && Math.random() < 0.35;
+  ask({
+    tone:"diplo", eyebrow:"Дипломатична лінія · захищений канал",
+    title:"Партнери підтвердили пакет допомоги",
+    quote:"«Вітаємо, ваші переговори були успішними — пакет уже погоджено. Лишилося ваше слово.»",
+    body:`У пакеті: <b>${pack} ₴</b>${withPatriot?" і <b>батарея Patriot</b>":""}. Ешелон може вирушити сьогодні ж.`,
+    note:`Суспільство читає новини: щит тримається не власними силами — настрій впаде на 12.
+          Якщо впораєтеся самотужки, настрій зросте, а власне виробництво даватиме більше ₴ уже назавжди.`,
+    ledger:[`настрій: ${Math.round(G.mood)}%`, `власне виробництво: +${Math.round((G.selfBoost||0)*100)}%`,
+            `пакетів: ${G.stats.aidTaken}`, `відмов: ${G.stats.aidRefused}`],
+    timer:22, timeout:"self",
+    choices:[
+      {t:"Прийняти пакет", s:"Ешелон уже завтра на кордоні.", tag:`+${pack} ₴ · −12 настрою`, k:"take"},
+      {t:"Впораємося самотужки", s:"Ввічлива відмова. Заводи працюють, люди бачать, що країна тягне сама.",
+       tag:"+8 настрою · +5% ₴ назавжди", k:"self"}
+    ],
+    onPick: k => resolveAid(k, pack, withPatriot)
+  });
+}
+function resolveAid(k, pack, withPatriot){
+  if(k === "take"){
+    addMoney(pack);
+    G.stats.aidTaken++;
+    if(withPatriot){ G.unlocked.patriot = 1; G.up.u_patriot = 1; }
+    SFX.buy();
+    addMood(-12, "щит тримається не власними силами");
+    tell({
+      tone:"diplo", eyebrow:"Пакет ухвалено",
+      title:"Вітаємо — переговори були успішними",
+      quote:"«Ви отримали допомогу від партнерів. Вантаж у дорозі.»",
+      body:`+${pack} ₴${withPatriot?", батарея <b>Patriot</b> розблокована":""}.
+            Настрій населення впав до <b>${Math.round(G.mood)}%</b>: люди бачать, що небо тримають чужі ракети,
+            і всі доходи тимчасово просідають.`,
+      ok:"Прийняти вантаж"
+    });
+  } else {
+    G.stats.aidRefused++;
+    G.selfBoost = Math.min(0.4, (G.selfBoost||0) + 0.05);
+    G.effects.push({id:"self"+G.stats.aidRefused, n:"Власне виробництво", waves:999, mods:{pay:1.05}, good:true});
+    addMood(+8, "країна тягне сама");
+    tell({
+      tone:"diplo", eyebrow:"Відповідь надіслано",
+      title:"Впораємося самотужки",
+      quote:"«Дякуємо. Цього разу — власними силами.»",
+      body:`Настрій зріс до <b>${Math.round(G.mood)}%</b>, а власне виробництво тепер дає
+            <b>+${Math.round(G.selfBoost*100)}%</b> ₴ назавжди: кожна відмова окупається в наступних хвилях.`,
+      ok:"До роботи"
+    });
+  }
+  dirty.rail = true;
+}
+
+/* ══════════════ ДІАЛОГИ ══════════════ */
+const el = {
+  money:$("s-money"), mood:$("s-mood"), lvl:$("s-lvl"), xp:$("s-xp"), xpbar:$("s-xpbar"),
+  shield:$("s-shield"), wave:$("s-wave"), streak:$("s-streak"), leak:$("s-leak"),
+  build:$("build"), shop:$("shop"), log:$("log"), legend:$("legend"),
+  citylist:$("citylist"), citiesSum:$("cities-sum"), repnote:$("repnote"),
+  cab:$("btn-cab"), cabHint:$("cab-hint"), efflist:$("efflist"),
+  banner:$("banner"), bannerText:$("banner-text"), bannerCd:$("banner-cd"),
+  coach:$("coach"), coachText:$("coach-text"),
+  wlabel:$("w-label"), wmeter:$("w-meter"), wbtn:$("btn-wave"), preview:$("preview"),
+  hint:$("sel-hint"), veil:$("veil"), card:$("veil-card"), quick:$("quickbar")
+};
+function $(id){ return document.getElementById(id); }
+
+function renderModal(){
+  const c = G.modal.cfg;
+  const odds = c.odds ? `
+    <div class="odds">
+      <div class="track">
+        <i style="width:${c.odds.p*100}%;background:var(--alarm)"></i>
+        <i style="width:${(1-c.odds.p)*100}%;background:#2d5a46"></i>
+      </div>
+      <div class="keys">
+        <span class="s">${Math.round(c.odds.p*100)}% · ${c.odds.bad}</span>
+        <span class="w">${Math.round((1-c.odds.p)*100)}% · ${c.odds.good}</span>
+      </div>
+    </div>` : "";
+  const ledger = c.ledger && c.ledger.filter(Boolean).length
+    ? `<div class="ledger">${c.ledger.filter(Boolean).map(x=>`<span>${x}</span>`).join("")}</div>` : "";
+  const timer = G.modal.max > 0
+    ? `<div class="timerbar"><i id="tbar" style="width:100%"></i></div>
+       <div class="ledger" style="border:0;padding:0;margin-bottom:10px">
+         <span>Рішення за <b id="tsec">${Math.ceil(G.modal.timer)} с</b> — інакше штаб вирішить без вас</span></div>` : "";
+  const choices = (c.choices||[]).map((ch,i)=>`
+    <button class="choice ${ch.bold?"bold":""}" data-pick="${i}" type="button" ${ch.off?"disabled":""}>
+      <span class="t">${ch.t}${ch.s?`<span class="s">${ch.s}</span>`:""}</span>
+      ${ch.tag?`<span class="tag">${ch.tag}</span>`:""}
+    </button>`).join("");
+  const tone = c.tone === "diplo" ? " diplo" : c.tone === "warn" ? " warn" : c.tone === "perk" ? " perk" : "";
+  el.card.className = "card event" + tone;
+  el.veil.className = "veil event" + tone;
+  el.card.innerHTML = `
+    <div class="mbody">
+      <div class="eyebrow ${c.tone==="diplo"?"sky":c.tone==="perk"?"":"bad"}">${c.eyebrow}</div>
+      <h3>${c.title}</h3>
+      ${c.quote?`<blockquote class="quote">${c.quote}</blockquote>`:""}
+      ${c.body?`<p>${c.body}</p>`:""}
+      ${odds}
+      ${c.html||""}
+      ${c.note?`<p class="note">${c.note}</p>`:""}
+      ${ledger}
+    </div>
+    ${timer}
+    <div class="choices">${choices}</div>`;
+  el.veil.hidden = false;
+}
+function ask(cfg){ G.modal = {cfg, timer:cfg.timer||0, max:cfg.timer||0}; renderModal(); }
+function tell(cfg){ ask({...cfg, timer:0, choices:[{t:cfg.ok||"Зрозуміло", k:"ok"}], onPick:()=>cfg.after&&cfg.after()}); }
+function pick(k){
+  const cfg = G.modal.cfg;
+  G.modal = null; G.redAlert = 0;
+  el.card.className = "card"; el.veil.className = "veil"; el.veil.hidden = true;
+  if(cfg.onPick) cfg.onPick(k);
+  dirty.rail = true;
+}
+
+/* ══════════════ ПЕРКИ ══════════════ */
+function openPerkDraft(){
+  const pool = PERKS.filter(p => G.perk[p.id] < p.max);
+  if(!pool.length || !G.pendingPerks){ G.pendingPerks = 0; return; }
+  const draft = [];
+  const bag = [...pool];
+  while(draft.length < 3 && bag.length) draft.push(bag.splice((Math.random()*bag.length)|0, 1)[0]);
+  SFX.level();
+  ask({
+    tone:"perk", eyebrow:`Рівень командування ${G.level}`,
+    title:"Оберіть підсилення",
+    body:"Досвід за збиті цілі підняв рівень командування. Один із трьох варіантів лишиться з вами до кінця партії.",
+    html:`<div class="draft">${draft.map((p,i)=>`
+      <button class="perk" data-pick="${i}" type="button">
+        <span class="t">${p.n}</span>
+        <span class="s">${p.d}</span>
+        <span class="lv">${p.instant?"одноразово":`рівень ${G.perk[p.id]+1} / ${p.max}`}</span>
+      </button>`).join("")}</div>`,
+    choices: draft.map(p => ({t:p.n, k:p.id, hide:true})),
+    onPick: id => takePerk(id)
+  });
+  /* кнопки-картки перків самі є вибором — ховаємо звичайний список */
+  el.card.querySelector(".choices").style.display = "none";
+}
+function takePerk(id){
+  const p = PERKS.find(x => x.id === id);
+  if(!p) return;
+  G.perk[id]++;
+  G.pendingPerks--;
+  if(id === "p_lend") addMoney(350);
+  if(id === "p_fund") G.fund++;
+  say(`Перк: ${p.n} → ${p.instant?"застосовано":"рівень "+G.perk[id]}`, "good");
+  SFX.buy();
+  dirty.rail = true;
+  if(G.pendingPerks > 0) setTimeout(openPerkDraft, 240);
+}
+
+/* ══════════════ КАБІНЕТ РІШЕНЬ ══════════════ */
+function openCabinet(){
+  if(G.over || G.modal) return;
+  if(G.cabUsed === G.wave){ SFX.denied(); return; }
+  const bag = DECISIONS.filter(d => !G.effects.some(e => e.id === d.id));
+  const draft = [];
+  const pool = [...bag];
+  while(draft.length < 3 && pool.length) draft.push(pool.splice((Math.random()*pool.length)|0, 1)[0]);
+  ask({
+    tone:"diplo", eyebrow:"Кабінет міністрів · засідання",
+    title:"Що оголосимо країні?",
+    body:`Одне рішення на хвилю. Настрій населення множить усі доходи й швидкість відбудови —
+          але кожен відсоток рейтингу за щось платиться. Бюджет: <b>${Math.round(G.money)} ₴</b>, настрій: <b>${Math.round(G.mood)}%</b>.`,
+    timer:0,
+    choices: draft.map(d => ({
+      t: d.n,
+      s: d.d,
+      tag: `${d.cost?`−${d.cost} ₴ · `:""}${d.mood>0?`+${d.mood}`:d.mood<0?`${d.mood}`:"±0"} настрою`,
+      k: d.id,
+      bold: d.mood < 0 || !!d.promise,
+      off: d.cost > G.money
+    })).concat([{t:"Відкласти засідання", s:"Нічого не оголошувати цієї хвилі.", k:"none"}]),
+    onPick: k => applyDecision(k)
+  });
+}
+function applyDecision(id){
+  if(id === "none") return;
+  const d = DECISIONS.find(x => x.id === id);
+  if(!d || d.cost > G.money) return;
+  G.cabUsed = G.wave;
+  G.stats.decisions++;
+  if(d.cost){ G.money -= d.cost; }
+  if(d.gain) addMoney(d.gain);
+  if(d.mood) addMood(d.mood, `рішення «${d.n}»`);
+  if(d.heal) for(const c of G.cities) c.hp = Math.min(c.max, c.hp + d.heal);
+  if(d.gift === "mvg"){
+    const spot = findSpot();
+    if(spot){ G.towers.push({k:"mvg", x:spot.x, y:spot.y, cd:0, ang:-1.57, rec:0, lvl:1, spent:0}); }
+  }
+  if(d.promise){ G.promise = {waves:2, leaks:0}; }
+  if(d.eff){
+    const mods = {...d.eff}; delete mods.waves;
+    G.effects.push({id:d.id, n:d.n, waves:d.eff.waves, mods, good:d.mood>0});
+  }
+  SFX.buy();
+  say(`Рішення кабінету: ${d.n}`, d.mood>=0?"good":"hit");
+  dirty.rail = true;
+}
+function findSpot(){
+  for(let i=0;i<300;i++){
+    const x = BB.x0 + Math.random()*(BB.x1-BB.x0);
+    const y = BB.y0 + Math.random()*(BB.y1-BB.y0);
+    if(canPlace(x,y)) return {x,y};
+  }
+  return null;
+}
+
+/* ══════════════ ПІДКАЗКИ ══════════════ */
+let coachTimer = 0;
+function tip(id, text){
+  if(G.tips[id]) return;
+  G.tips[id] = 1;
+  el.coachText.textContent = text;
+  el.coach.hidden = false;
+  coachTimer = 11;
+}
+$("coach-x").onclick = () => { el.coach.hidden = true; coachTimer = 0; };
+
+/* ══════════════ ОНБОРДИНГ ══════════════ */
+const SLIDES = [
+  () => ({
+    eyebrow:"Інструктаж · 1/5",
+    title:"Ви — командний пункт ППО",
+    body:`Росія б'є хвилями: дрони, крилаті та балістичні ракети. Ваше завдання — не пустити їх до шести міст.
+          У кожного міста є <b>запас міцності</b>; коли всі міста падають до нуля — оборону прорвано.`,
+    html:`<div class="diffrow">${Object.entries(DIFF).map(([k,d])=>`
+      <button class="diffbtn ${G.diff===k?"on":""}" data-diff="${k}" type="button">
+        <span class="t">${d.n}</span><span class="s">${d.note}</span>
+      </button>`).join("")}</div>`
+  }),
+  () => ({
+    eyebrow:"Інструктаж · 2/5",
+    title:"Гроші — єдина валюта",
+    html:`
+      <div class="keyrow"><div class="ic">₴</div><div class="tx">
+        <b>Бюджет</b> витрачається на все: нові позиції, їхні покращення, відбудову міст, контракти штабу й рішення кабінету.</div></div>
+      <div class="keyrow"><div class="ic">🎯</div><div class="tx">
+        Кожна <b>збита ціль</b> дає ₴ — від 13 за «шахед» до 100 за «Кинджал».</div></div>
+      <div class="keyrow"><div class="ic">🪙</div><div class="tx">
+        З кожної цілі падають <b>монети</b> — вони самі летять на ваш баланс. Клік по монеті забирає її миттєво,
+        а інколи з цілі випадає ще й додаткова трофейна монета.</div></div>
+      <div class="keyrow"><div class="ic">🧾</div><div class="tx">
+        Наприкінці хвилі надходять <b>податки</b>, а за хвилю без жодного влучання — ще й премія.</div></div>`
+  }),
+  () => ({
+    eyebrow:"Інструктаж · 3/5",
+    title:"Настрій населення — це множник",
+    html:`
+      <div class="keyrow"><div class="ic">🙂</div><div class="tx">
+        Кожна збита ціль тішить людей (<b>+настрій</b>), кожне влучання по місту — навпаки (<b>−настрій</b>).</div></div>
+      <div class="keyrow"><div class="ic">✖️</div><div class="tx">
+        Настрій множить <b>усі доходи</b> (від ×0,70 до ×1,30) і швидкість <b>відбудови міст</b>. Це не валюта — це стан країни.</div></div>
+      <div class="keyrow"><div class="ic">🏛️</div><div class="tx">
+        Підняти його можна в <b>Кабінеті рішень</b>: виплати, заморозка тарифів, паради. Кожне популістичне рішення
+        має ціну — гроші, ослаблену оборону або ризик розчарування.</div></div>
+      <div class="keyrow"><div class="ic">🔗</div><div class="tx">
+        <b>Серія</b> збиттів без пропусків підіймає множник ₴ до ×2,0. Одне влучання — і серія обнуляється.</div></div>`
+  }),
+  () => ({
+    eyebrow:"Інструктаж · 4/5",
+    title:"Досвід і рівні командування",
+    html:`
+      <div class="keyrow"><div class="ic">⭐</div><div class="tx">
+        За збиття нараховується <b>досвід</b>. Новий рівень — і ви обираєте <b>один перк із трьох</b>:
+        радіус, шкода, дешевша відбудова, резервний фонд проти «Орєшніка» тощо.</div></div>
+      <div class="keyrow"><div class="ic">🏗️</div><div class="tx">
+        <b>Відбудова</b> плавна: увімкніть 🔧 навпроти міста — і воно відновлюється щосекунди, поки є гроші.
+        Місто з нуля відбудовується вдвічі повільніше й дорожче.</div></div>
+      <div class="keyrow"><div class="ic">🎚️</div><div class="tx">
+        Кожну позицію можна <b>покращити до 3 рівня</b> (+22% радіус, +25% шкоди) або продати.</div></div>`
+  }),
+  () => ({
+    eyebrow:"Інструктаж · 5/5",
+    title:"Хто кого збиває",
+    html:`
+      <div class="keyrow"><div class="ic">🛻</div><div class="tx"><b>МВГ</b> — тільки дрони, зате дешево й швидко.</div></div>
+      <div class="keyrow"><div class="ic">🚀</div><div class="tx"><b>ПЗРК і NASAMS</b> — дрони, крилаті ракети та КАБи.</div></div>
+      <div class="keyrow"><div class="ic">🛰️</div><div class="tx"><b>Patriot</b> — єдиний, хто дістає балістику й «Кинджали» з МіГ-31К.</div></div>
+      <div class="keyrow"><div class="ic">📡</div><div class="tx"><b>РЕБ</b> не стріляє: глушить дрони, збиває їх з курсу — і подвоює ефективність сусідніх позицій.</div></div>
+      <div class="keyrow"><div class="ic">⚡</div><div class="tx">Окремі події: зліт <b>МіГ-31К</b>, загроза <b>«Орєшніка»</b> (ставка 30% бюджету проти шансу 20/80)
+        і <b>пакети партнерів</b>, що дають гроші ціною настрою.</div></div>`
+  })
+];
+function showOnboarding(step){
+  G.onb = step;
+  const s = SLIDES[step]();
+  const last = step === SLIDES.length-1;
+  ask({
+    tone:"perk",
+    eyebrow:s.eyebrow, title:s.title, body:s.body,
+    html:`<div class="slides"><div class="dots">${SLIDES.map((_,i)=>`<i class="${i<=step?"on":""}"></i>`).join("")}</div></div>${s.html||""}`,
+    choices:[
+      {t: last ? "До бою" : "Далі", s: last ? "Перша хвиля буде легкою — встигнете розгорнути позиції." : "", k:"next"},
+      {t:"Пропустити інструктаж", k:"skip"}
+    ],
+    onPick: k => {
+      if(k === "skip" || last){ startGame(); }
+      else showOnboarding(step+1);
+    }
+  });
+}
+function startGame(){
+  try{ localStorage.setItem("ns-seen","1"); }catch(e){}
+  G.paused = false;
+  const phone = matchMedia("(max-width:760px), (max-height:500px)").matches;
+  tip("build", phone
+    ? "Оберіть засіб під мапою й торкніться мапи: перший дотик ставить позначку з радіусом, другий — розгортає. Почніть із двох-трьох МВГ навколо Києва."
+    : "Оберіть засіб праворуч і клікніть по мапі. Почніть із двох-трьох МВГ навколо Києва — «шахеди» йдуть саме туди.");
+}
+function quickStart(){
+  G.onb = null;
+  ask({
+    tone:"perk", eyebrow:"Небесний Щит",
+    title:"Оберіть складність",
+    body:"Шість міст, хвилі дронів і ракет, один бюджет і настрій населення, що множить усі доходи.",
+    html:`<div class="diffrow">${Object.entries(DIFF).map(([k,d])=>`
+      <button class="diffbtn ${G.diff===k?"on":""}" data-diff="${k}" type="button">
+        <span class="t">${d.n}</span><span class="s">${d.note}</span>
+      </button>`).join("")}</div>`,
+    choices:[
+      {t:"Почати оборону", k:"go"},
+      {t:"Повний інструктаж", s:"П'ять екранів про валюти, настрій, перки й події.", k:"full"}
+    ],
+    onPick: k => k === "full" ? showOnboarding(0) : startGame()
+  });
+}
+
+/* ══════════════ ПОРАЗКА ══════════════ */
+function collapse(){
+  if(G.lastChance && G.money >= 220){
+    G.lastChance = false;
+    G.redAlert = 1;
+    SFX.siren();
+    ask({
+      tone:"alarm", eyebrow:"Критичний момент",
+      title:"Усі міста знекровлені",
+      quote:"«Ще одна ніч — і оборонятися не буде за що.»",
+      body:"Екстрений фонд може підняти найбільше місто з руїн просто зараз. Другого такого шансу не буде.",
+      timer:14, timeout:"no",
+      choices:[
+        {t:"Екстрена відбудова", s:"Київ повертається у стрій із 60 міцності.", tag:"−220 ₴", k:"yes"},
+        {t:"Немає чим", s:"Зберегти бюджет і прийняти поразку.", k:"no", bold:true}
+      ],
+      onPick: k => {
+        if(k === "yes"){
+          G.money -= 220;
+          const c = G.cities.find(x => x.big) || G.cities[0];
+          c.hp = 60; c.flash = 1;
+          addMood(+10, "країна встояла на межі");
+          say("ЕКСТРЕНА ВІДБУДОВА: місто повернуто у стрій", "good");
+          dirty.rail = true;
+        } else gameOver();
+      }
+    });
+    return;
+  }
+  gameOver();
+}
+const rankFor = w => RANKS.reduce((r,x) => w >= x[0] ? x : r, RANKS[0]);
+const bestRead = () => { try{ return +localStorage.getItem("ns-best") || 0; }catch(e){ return 0; } };
+const bestSave = w => { try{ localStorage.setItem("ns-best", String(w)); }catch(e){} };
+
+function advice(){
+  if(G.mood < 35) return "Настрій упав нижче 35% — усі доходи просіли майже на чверть. Кабінет рішень існує саме для цього: навіть «Заморозити тарифи» за 0 ₴ дає +12 рейтингу.";
+  if(!G.up.crews && G.stats.spentRep < 100) return "Ви майже не користувалися відбудовою. Тримати міста повними дешевше, ніж втрачати їх: 1 HP коштує близько 1,2 ₴, а влучання «Іскандера» знімає 34.";
+  if(G.stats.oreHits && !G.luckBets) return "«Орєшнік» діставав вас без жодного резерву. 30% бюджету зрізають шкоду вп'ятеро — на пізніх хвилях це дешевше, ніж відбудовувати два міста.";
+  if(!G.unlocked.patriot) return "Patriot так і не з'явився. З 7-ї хвилі приходять «Кинджали» з МіГ-31К, а їх не бере жоден інший засіб — контракт варто брати одразу, щойно назбираєте.";
+  if(G.towers.filter(t => t.k === "reb").length === 0) return "Спробуйте РЕБ: він не стріляє, але вповільнює «шахеди» на 55%, і сусідні вогневі групи встигають зробити вдвічі більше пострілів.";
+  return "Тримайте оборону ешелонами: далекобійні NASAMS на підході, дешеві вогневі групи щільним кільцем безпосередньо навколо міст.";
+}
+function defeatHTML(){
+  const [, rank, note] = rankFor(G.wave);
+  const best = bestRead();
+  const record = G.wave > best;
+  if(record) bestSave(G.wave);
+  const rows = Object.entries(G.stats.by).sort((a,b) => b[1]-a[1]);
+  const top = rows.length ? rows[0][1] : 1;
+  const tally = rows.length ? rows.map(([k,n]) => `
+    <div class="r"><span>${ENEMIES[k].n}</span>
+      <span class="bar"><i style="width:${Math.max(4,n/top*100)}%;background:${ENEMIES[k].c}"></i></span>
+      <span class="num">${n}</span></div>`).join("")
+    : `<div class="r"><span>Жодної цілі не збито</span><span></span><span></span></div>`;
+  const roll = G.cities.map(c => `<span class="${c.hp>0?"held":"fell"}">${c.n}${c.hp>0?` · ${Math.round(c.hp/c.max*100)}%`:""}</span>`).join("");
+  const perks = Object.entries(G.perk).filter(([,v]) => v > 0)
+    .map(([k,v]) => `${PERKS.find(p=>p.id===k).n}${v>1?` ×${v}`:""}`).join(" · ") || "жодного";
+  return `
+    <div class="mbody">
+      <div class="eyebrow bad">✦ Оборону прорвано ✦</div>
+      <h3>Щит тримався ${G.wave} ${G.wave===1?"хвилю":(G.wave<5?"хвилі":"хвиль")}</h3>
+      <div class="rankline">
+        Звання: <b>${rank}</b> · рівень ${G.level} · ${DIFF[G.diff].n}
+        ${record?`<span class="new">НОВИЙ РЕКОРД</span>`:`<span class="rec">рекорд: хвиля ${best}</span>`}
+      </div>
+      <p>${note}</p>
+      <div class="scorebox">
+        <div><b>${G.kills}</b><span>Збито цілей</span></div>
+        <div><b>${G.leaks}</b><span>Прорвалось</span></div>
+        <div><b>${Math.round(G.stats.earned)}</b><span>₴ зароблено</span></div>
+        <div><b>${Math.round(G.mood)}%</b><span>Настрій</span></div>
+        <div><b>${G.stats.built}</b><span>Позицій</span></div>
+        <div><b>${G.stats.decisions}</b><span>Рішень</span></div>
+      </div>
+      <div class="ledger" style="border:0;padding:0">
+        <span>Перки: <b>${perks}</b></span>
+        <span>Ставок проти «Орєшніка»: <b>${G.luckBets||0}</b>${G.luckBets?` · вгадано <b>${G.luckWins}</b>`:""}</span>
+        <span>Пакетів партнерів: <b>${G.stats.aidTaken}</b> · відмов: <b>${G.stats.aidRefused}</b></span>
+        <span>На відбудову: <b>${Math.round(G.stats.spentRep)} ₴</b></span>
+      </div>
+      <div class="tally">${tally}</div>
+      <div class="cityroll">${roll}</div>
+      <p>${advice()}</p>
+    </div>
+    <div class="acts">
+      <button class="btn primary" id="again" type="button">Нова оборона</button>
+      <button class="btn" id="look" type="button">Оглянути мапу</button>
+    </div>`;
+}
+function showDefeat(){
+  el.card.className = "card";
+  el.card.innerHTML = defeatHTML();
+  el.veil.className = "veil defeat";
+  el.veil.hidden = false;
+  $("again").onclick = () => { el.veil.hidden = true; el.veil.className = "veil"; reset(); quickStart(); };
+  $("look").onclick = () => { el.veil.hidden = true; el.veil.className = "veil"; };
+}
+function gameOver(){
+  G.over = true; G.phase = "over";
+  G.place = null; G.sel = null; G.modal = null; G.mig = null; G.redAlert = 0;
+  G.shake = 1;
+  SFX.buzz(0); SFX.defeat();
+  clearSave();
+  say("Усі міста вибули. Оборону прорвано.", "hit");
+  showDefeat();
+  dirty.rail = true;
+}
+
+/* ══════════════ МАЛЮВАННЯ ══════════════ */
+function drawMap(){
+  ctx.fillStyle = "#070a0f"; ctx.fillRect(-16,-16,W+32,H+32);
+  ctx.save();
+  ctx.strokeStyle = "#0e1620"; ctx.lineWidth = 1;
+  for(let x=-40;x<W+40;x+=40){ ctx.beginPath(); ctx.moveTo(x+.5,-16); ctx.lineTo(x+.5,H+16); ctx.stroke(); }
+  for(let y=-40;y<H+40;y+=40){ ctx.beginPath(); ctx.moveTo(-16,y+.5); ctx.lineTo(W+16,y+.5); ctx.stroke(); }
+  ctx.restore();
+
+  if(G.alarm > 0.02){
+    ctx.save();
+    const g = ctx.createRadialGradient(W/2,H/2,H*0.2,W/2,H/2,H*0.82);
+    g.addColorStop(0,"rgba(255,60,80,0)");
+    g.addColorStop(1,`rgba(255,60,80,${0.20*G.alarm})`);
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.beginPath();
+  POLY.forEach(([x,y],i) => i?ctx.lineTo(x,y):ctx.moveTo(x,y));
+  ctx.closePath();
+  const lg = ctx.createLinearGradient(0,BB.y0,0,BB.y1);
+  lg.addColorStop(0,"#1b2e26"); lg.addColorStop(1,"#12201c");
+  ctx.fillStyle = lg; ctx.fill();
+  ctx.save(); ctx.clip();
+  ctx.strokeStyle = "rgba(90,140,115,.10)"; ctx.lineWidth = 1;
+  for(const [lo,la] of OBLAST_HINT){ const c = P(lo,la); ctx.beginPath(); ctx.arc(c.x,c.y,58,0,6.283); ctx.stroke(); }
+  ctx.strokeStyle = "rgba(70,140,200,.5)"; ctx.lineWidth = 2.6; ctx.lineJoin = "round";
+  ctx.beginPath();
+  DNIPRO.forEach(([lo,la],i) => { const p = P(lo,la); i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); });
+  ctx.stroke();
+  ctx.setLineDash([7,6]); ctx.strokeStyle = "rgba(255,90,110,.42)"; ctx.lineWidth = 2;
+  ctx.beginPath();
+  FRONT.forEach(([lo,la],i) => { const p = P(lo,la); i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); });
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.restore();
+  ctx.strokeStyle = "rgba(120,200,160,.62)"; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  const c0 = P(31.5,49.2), a = G.sweep % 6.283;
+  ctx.globalCompositeOperation = "lighter";
+  ctx.beginPath(); ctx.moveTo(c0.x,c0.y); ctx.arc(c0.x,c0.y,520,a-0.36,a); ctx.closePath();
+  const sg = ctx.createRadialGradient(c0.x,c0.y,0,c0.x,c0.y,520);
+  sg.addColorStop(0,"rgba(80,200,255,.10)"); sg.addColorStop(1,"rgba(80,200,255,0)");
+  ctx.fillStyle = sg; ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.font = "600 10px 'IBM Plex Mono',monospace";
+  ctx.fillStyle = "rgba(255,90,110,.6)";
+  const fp = P(38.2,48.9);
+  ctx.fillText("ЛІНІЯ ЗІТКНЕННЯ", fp.x-10, fp.y);
+  ctx.restore();
+}
+
+function drawCities(){
+  for(const c of G.cities){
+    const ratio = Math.max(0, c.hp/c.max), dead = c.hp <= 0;
+    ctx.save();
+    if(c.flash > 0){
+      ctx.beginPath(); ctx.arc(c.x,c.y,(26*c.flash+8)*S,0,6.283);
+      ctx.fillStyle = `rgba(255,80,100,${0.28*c.flash})`; ctx.fill();
+    }
+    if(c.rep){
+      ctx.beginPath(); ctx.arc(c.x,c.y,(16 + Math.sin(G.t*4)*2)*S,0,6.283);
+      ctx.strokeStyle = "rgba(79,211,154,.55)"; ctx.setLineDash([3,4]); ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    const R = (c.big ? 8 : 6.4) * S;
+    ctx.beginPath(); ctx.arc(c.x,c.y,R,0,6.283);
+    ctx.fillStyle = dead ? "#3a3f45" : "#0c1218"; ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = dead ? "#4b5560" : (ratio>0.5?"#ffcb3d":(ratio>0.25?"#ff9a3d":"#ff5a6e"));
+    ctx.stroke();
+    if(c.big && !dead){ ctx.beginPath(); ctx.arc(c.x,c.y,3*S,0,6.283); ctx.fillStyle = "#ffcb3d"; ctx.fill(); }
+    const bw = 34*S, bh = 3.4*S, by = c.y + R + 5*S;
+    ctx.fillStyle = "rgba(10,16,22,.85)"; ctx.fillRect(c.x-bw/2, by, bw, bh);
+    ctx.fillStyle = dead ? "#4b5560" : (ratio>0.5?"#4fd39a":(ratio>0.25?"#ffcb3d":"#ff5a6e"));
+    ctx.fillRect(c.x-bw/2, by, bw*ratio, bh);
+    ctx.font = `600 ${9*S}px 'IBM Plex Mono',monospace`;
+    ctx.textAlign = "center";
+    ctx.fillStyle = dead ? "#5d6874" : "rgba(214,228,242,.75)";
+    ctx.fillText(`${Math.round(c.hp)}/${c.max}`, c.x, by + bh + 8.5*S);
+    ctx.font = `600 ${11*S}px 'IBM Plex Sans',sans-serif`;
+    ctx.fillStyle = dead ? "#5d6874" : "#dbe6f2";
+    ctx.fillText(c.n, c.x, c.y - R - 6*S);
+    ctx.restore();
+  }
+}
+
+function towerGlyph(k, x, y, ang, rec, lvl){
+  const T_ = TOWERS[k];
+  ctx.save(); ctx.translate(x,y); ctx.scale(S,S);
+  ctx.beginPath(); ctx.arc(0,0,10,0,6.283);
+  ctx.fillStyle = "#0b1119"; ctx.fill();
+  ctx.lineWidth = 1.8; ctx.strokeStyle = T_.color; ctx.stroke();
+  if(lvl > 1){
+    ctx.fillStyle = "#ffcb3d";
+    for(let i=0;i<lvl-1;i++){ ctx.beginPath(); ctx.arc(-4+i*4.5, -12, 1.6, 0, 6.283); ctx.fill(); }
+  }
+  ctx.rotate(ang||0);
+  ctx.fillStyle = T_.color;
+  if(k === "mvg"){ ctx.fillRect(-1.6,-1.6, 11-rec*3, 3.2); ctx.fillRect(-5,-3.4,5,6.8); }
+  else if(k === "pzrk"){ ctx.beginPath(); ctx.moveTo(11-rec*3,0); ctx.lineTo(-3,-3.6); ctx.lineTo(-3,3.6); ctx.closePath(); ctx.fill(); }
+  else if(k === "nasams"){ for(const o of [-3.4,0,3.4]) ctx.fillRect(-4,o-1, 12-rec*3, 2); }
+  else if(k === "patriot"){ ctx.fillRect(-5,-5,4,10); for(const o of [-3.6,-1.2,1.2,3.6]) ctx.fillRect(-1,o-0.8, 12-rec*3, 1.6); }
+  else {
+    ctx.rotate(-(ang||0));
+    ctx.lineWidth = 1.5; ctx.strokeStyle = T_.color;
+    for(let i=1;i<=3;i++){
+      ctx.beginPath(); ctx.arc(0,0,i*2.6,-1.1,1.1); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,i*2.6,Math.PI-1.1,Math.PI+1.1); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawTowers(){
+  for(const t of G.towers){
+    const T_ = TOWERS[t.k], R = towerRange(t);
+    const shown = G.sel === t || G.hover === t;
+    if(shown){
+      ctx.save();
+      ctx.beginPath(); ctx.arc(t.x,t.y,R,0,6.283);
+      ctx.fillStyle = T_.color+"14"; ctx.fill();
+      ctx.setLineDash([4,5]); ctx.lineWidth = 1.2; ctx.strokeStyle = T_.color+"99"; ctx.stroke();
+      ctx.restore();
+    }
+    if(T_.aura){
+      ctx.save();
+      ctx.beginPath(); ctx.arc(t.x,t.y,R,0,6.283);
+      ctx.setLineDash([2,7]); ctx.lineWidth = 1; ctx.strokeStyle = "rgba(255,203,61,.30)"; ctx.stroke();
+      ctx.restore();
+    }
+    towerGlyph(t.k, t.x, t.y, t.ang, t.rec||0, t.lvl||1);
+    if(G.sel === t){
+      ctx.save(); ctx.beginPath(); ctx.arc(t.x,t.y,14*S,0,6.283);
+      ctx.strokeStyle = "#ffcb3d"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+    }
+  }
+}
+
+function drawEnemy(e){
+  const d = ENEMIES[e.type];
+  ctx.save();
+  if(e.trail.length > 3){
+    ctx.beginPath(); ctx.moveTo(e.trail[0], e.trail[1]);
+    for(let i=2;i<e.trail.length;i+=2) ctx.lineTo(e.trail[i], e.trail[i+1]);
+    ctx.strokeStyle = d.c+"55"; ctx.lineWidth = e.cls==="ballistic"?2.4:1.4; ctx.stroke();
+  }
+  ctx.translate(e.x,e.y); ctx.rotate(e.ang); ctx.scale(S,S);
+  ctx.fillStyle = d.c;
+  if(e.cls === "drone"){
+    if(d.recon){ ctx.beginPath(); ctx.ellipse(0,0,7,2.4,0,0,6.283); ctx.fill(); ctx.fillRect(-1,-7,2,14); }
+    else { ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-4,-6.5); ctx.lineTo(-1.5,0); ctx.lineTo(-4,6.5); ctx.closePath(); ctx.fill(); }
+  } else if(e.cls === "cruise"){
+    ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(-6,-2.6); ctx.lineTo(-8,0); ctx.lineTo(-6,2.6); ctx.closePath(); ctx.fill();
+    ctx.fillRect(-3,-5,2.4,10);
+  } else if(e.cls === "kab"){
+    ctx.beginPath(); ctx.ellipse(0,0,7,3,0,0,6.283); ctx.fill(); ctx.fillRect(-7,-5.5,2.2,11);
+  } else {
+    ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(-5,-3.4); ctx.lineTo(-7,0); ctx.lineTo(-5,3.4); ctx.closePath();
+    ctx.shadowColor = d.c; ctx.shadowBlur = 10; ctx.fill();
+  }
+  ctx.restore();
+  if(e.hp < e.max){
+    ctx.save();
+    ctx.fillStyle = "rgba(8,12,18,.8)"; ctx.fillRect(e.x-9*S, e.y-13*S, 18*S, 2.6*S);
+    ctx.fillStyle = d.c; ctx.fillRect(e.x-9*S, e.y-13*S, 18*S*Math.max(0,e.hp/e.max), 2.6*S);
+    ctx.restore();
+  }
+  if(e.slow > 0){
+    ctx.save();
+    ctx.beginPath(); ctx.arc(e.x,e.y,13*S,0,6.283);
+    ctx.strokeStyle = "rgba(255,203,61,.55)"; ctx.setLineDash([2,3]); ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawDrop(d){
+  const r = (d.big ? 9.5 : 7.5) * S;
+  const spin = Math.abs(Math.cos(G.t*5 + d.ph));
+  ctx.save();
+  ctx.translate(d.x, d.y);
+  if(d.fly){                                   // слід у польоті
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath(); ctx.arc(0, 0, r + 4, 0, 6.283);
+    ctx.fillStyle = "rgba(255,203,61,.18)"; ctx.fill();
+    ctx.restore();
+    ctx.shadowColor = "#ffcb3d"; ctx.shadowBlur = 12;
+  }
+  ctx.scale(Math.max(0.28, spin), 1);          // обертання монети
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283);
+  const g = ctx.createLinearGradient(0, -r, 0, r);
+  g.addColorStop(0, "#ffe07a"); g.addColorStop(0.5, "#f5bf2e"); g.addColorStop(1, "#c98f12");
+  ctx.fillStyle = g; ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 1.4; ctx.strokeStyle = "#8a5f0d"; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, r - 2.4, 0, 6.283);
+  ctx.lineWidth = 0.9; ctx.strokeStyle = "rgba(255,241,190,.75)"; ctx.stroke();
+  if(spin > 0.45){
+    ctx.font = `700 ${d.big?10:8}px 'IBM Plex Mono',monospace`;
+    ctx.fillStyle = "#7a5406"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("₴", 0, 0.5);
+  }
+  ctx.restore();
+}
+
+function draw(){
+  ctx.save();
+  if(!REDUCED && G.shake > 0.01){
+    const s = G.shake*7;
+    ctx.translate((Math.random()-0.5)*s, (Math.random()-0.5)*s);
+  }
+  drawMap();
+
+  if(G.redAlert){
+    const pulse = REDUCED ? 0.6 : 0.5 + 0.5*Math.sin(performance.now()/380);
+    ctx.save();
+    ctx.fillStyle = `rgba(150,10,26,${0.20+0.16*pulse})`;
+    ctx.fillRect(-16,-16,W+32,H+32);
+    ctx.strokeStyle = `rgba(255,70,90,${0.04+0.05*pulse})`; ctx.lineWidth = 1;
+    for(let y=0;y<H;y+=6){ ctx.beginPath(); ctx.moveTo(-16,y+.5); ctx.lineTo(W+16,y+.5); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  if(G.place && (G.ghost || G.mouse)){
+    const T_ = TOWERS[G.place], m = G.ghost || G.mouse, ok = canPlace(m.x,m.y) && G.money >= towerCost(G.place);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(m.x, m.y, T_.range*mRange(), 0, 6.283);
+    ctx.fillStyle = ok ? T_.color+"12" : "rgba(255,90,110,.09)";
+    ctx.fill();
+    ctx.setLineDash([5,5]); ctx.lineWidth = 1.3;
+    ctx.strokeStyle = ok ? T_.color+"bb" : "#ff5a6e";
+    ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = ok ? 0.95 : 0.4;
+    towerGlyph(G.place, m.x, m.y, 0, 0, 1);
+    ctx.globalAlpha = 1;
+  }
+
+  drawCities();
+  drawTowers();
+
+  for(const t of G.tracers){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, t.life/0.09);
+    ctx.beginPath(); ctx.moveTo(t.x1,t.y1); ctx.lineTo(t.x2,t.y2);
+    ctx.strokeStyle = t.c; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.restore();
+  }
+  for(const e of G.enemies) drawEnemy(e);
+  for(const s of G.shots){
+    ctx.save();
+    if(s.trail.length > 3){
+      ctx.beginPath(); ctx.moveTo(s.trail[0], s.trail[1]);
+      for(let i=2;i<s.trail.length;i+=2) ctx.lineTo(s.trail[i], s.trail[i+1]);
+      ctx.strokeStyle = s.c+"77"; ctx.lineWidth = 1.6; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(s.x,s.y,2.4*S,0,6.283);
+    ctx.fillStyle = "#fff"; ctx.shadowColor = s.c; ctx.shadowBlur = 8; ctx.fill();
+    ctx.restore();
+  }
+  for(const d of G.drops) drawDrop(d);
+  for(const f of G.fx){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, f.life*2.2));
+    if(f.ring){
+      const prog = f.life0 ? 1 - f.life/f.life0 : 0;
+      ctx.beginPath(); ctx.arc(f.x, f.y, Math.max(1, 4 + prog*54*f.k), 0, 6.283);
+      ctx.strokeStyle = f.c; ctx.lineWidth = 2; ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,6.283);
+      ctx.fillStyle = f.c; ctx.fill();
+    }
+    ctx.restore();
+  }
+  for(const x of G.texts){
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, x.life);
+    ctx.font = `600 ${12*S}px 'IBM Plex Mono',monospace`;
+    ctx.textAlign = "center"; ctx.fillStyle = x.c;
+    ctx.fillText(x.t, x.x, x.y);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  if(G.over){
+    ctx.save();
+    const pulse = REDUCED ? 0.5 : 0.5 + 0.5*Math.sin(performance.now()/620);
+    const g = ctx.createRadialGradient(W/2,H/2,H*0.15,W/2,H/2,H*0.95);
+    g.addColorStop(0,"rgba(120,10,24,0)");
+    g.addColorStop(1,`rgba(150,12,28,${0.30+0.14*pulse})`);
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+  if(G.paused && !G.over && !G.modal){
+    ctx.save();
+    ctx.fillStyle = "rgba(5,8,12,.55)"; ctx.fillRect(0,0,W,H);
+    ctx.font = `800 ${26*S}px Unbounded, sans-serif`; ctx.textAlign = "center";
+    ctx.fillStyle = "#e6edf5"; ctx.fillText("ПАУЗА", W/2, H/2);
+    ctx.restore();
+  }
+}
+
+/* ══════════════ РОЗМІЩЕННЯ ══════════════ */
+function canPlace(x,y){
+  if(!inUA(x,y)) return false;
+  for(const t of G.towers) if(Math.hypot(t.x-x, t.y-y) < Math.max(26, 22*S)) return false;
+  for(const c of G.cities) if(Math.hypot(c.x-x, c.y-y) < Math.max(17, 15*S)) return false;
+  return true;
+}
+function place(k,x,y){
+  const cost = towerCost(k);
+  if(G.money < cost){ SFX.denied(); say(`Недостатньо коштів: потрібно ${cost} ₴`, "hit"); return; }
+  if(!canPlace(x,y)){ SFX.denied(); say("Тут не можна розгорнути позицію", "hit"); return; }
+  G.money -= cost;
+  G.stats.spentBuild += cost; G.stats.built++;
+  G.towers.push({k, x, y, cd:0, ang:-1.57, rec:0, lvl:1, spent:cost});
+  SFX.build();
+  say(`${TOWERS[k].short} розгорнуто (−${cost} ₴)`);
+  dirty.rail = true;
+}
+function upgradeTower(t){
+  if(!t || (t.lvl||1) >= TOWER_MAXLVL) return;
+  const c = upCost(t);
+  if(G.money < c){ SFX.denied(); return; }
+  G.money -= c; t.spent = (t.spent||0) + c; t.lvl = (t.lvl||1) + 1;
+  SFX.buy();
+  say(`${TOWERS[t.k].short} → рівень ${t.lvl} (−${c} ₴)`);
+  dirty.rail = true;
+}
+function sellTower(t){
+  if(!t) return;
+  const back = Math.round((t.spent || TOWERS[t.k].cost) * 0.6);
+  G.money += back;
+  G.towers = G.towers.filter(x => x !== t);
+  if(G.sel === t) G.sel = null;
+  say(`${TOWERS[t.k].short} згорнуто (+${back} ₴)`);
+  dirty.rail = true;
+}
+
+/* ══════════════ ІНТЕРФЕЙС ══════════════ */
+const glyphSVG = k => {
+  const c = TOWERS[k].color;
+  return `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">${({
+    mvg:`<rect x="4" y="9" width="8" height="5" fill="${c}"/><rect x="10" y="7" width="8" height="2" fill="${c}"/>`,
+    pzrk:`<path d="M4 15 L14 5 L16 7 L6 17 Z" fill="${c}"/><circle cx="16" cy="6" r="2.4" fill="${c}"/>`,
+    nasams:`<rect x="3" y="6" width="14" height="2" fill="${c}"/><rect x="3" y="10" width="14" height="2" fill="${c}"/><rect x="3" y="14" width="14" height="2" fill="${c}"/>`,
+    patriot:`<rect x="2" y="4" width="3" height="13" fill="${c}"/><rect x="6" y="5" width="12" height="2" fill="${c}"/><rect x="6" y="9" width="12" height="2" fill="${c}"/><rect x="6" y="13" width="12" height="2" fill="${c}"/>`,
+    reb:`<circle cx="10" cy="14" r="2" fill="${c}"/><path d="M5 12 A7 7 0 0 1 15 12" stroke="${c}" stroke-width="1.8" fill="none"/><path d="M2.5 9 A11 11 0 0 1 17.5 9" stroke="${c}" stroke-width="1.6" fill="none"/>`
+  })[k]}</svg>`;
+};
+
+/* Кнопки в консолі не перебудовуються, якщо їхній вигляд не змінився: інакше потік
+   монет під час бою перемальовував список кожні 100 мс і клік губився між натисканням і відпусканням. */
+function setHTML(node, html){
+  if(node && node._html !== html){ node.innerHTML = html; node._html = html; }
+}
+function renderBuild(){
+  let html = "";
+  TOWER_ORDER.forEach((k,i) => {
+    const T_ = TOWERS[k], unl = !!G.unlocked[k], cost = towerCost(k), can = unl && G.money >= cost;
+    const hits = T_.aura ? "глушить дрони" : T_.hits.map(c => CLS[c]).join(" · ");
+    html += `
+      <button class="item ${G.place===k?"active":""}" data-build="${k}" ${unl?"":"disabled"} type="button">
+        <span class="glyph">${glyphSVG(k)}</span>
+        <span>
+          <span class="name">${i+1}. ${T_.name}${unl?"":" 🔒"}</span>
+          <span class="desc">${T_.desc}<br>Цілі: ${hits}${T_.aura?"":` · радіус ${Math.round(T_.range*mRange())}`}</span>
+        </span>
+        <span class="cost ${can?"":"no"}">${cost} ₴</span>
+      </button>`;
+  });
+  if(G.sel){
+    const t = G.sel, T_ = TOWERS[t.k], lvl = t.lvl||1, maxed = lvl >= TOWER_MAXLVL;
+    html += `
+      <div class="selbox">
+        <div class="h">${T_.name} · рівень ${lvl}/${TOWER_MAXLVL}</div>
+        <div class="m">Радіус ${Math.round(towerRange(t))}${T_.aura?"":` · шкода ${towerDmg(t).toFixed(1)} · темп ${(T_.rate*mRate()).toFixed(2)}/с`}</div>
+        <div class="row">
+          <button class="btn sm" data-upg="1" ${maxed||G.money<upCost(t)?"disabled":""} type="button">
+            ${maxed?"Максимум":`Покращити · ${upCost(t)} ₴`}</button>
+          <button class="btn sm danger" data-sell="1" type="button">Продати · ${Math.round((t.spent||T_.cost)*0.6)} ₴</button>
+        </div>
+      </div>`;
+  }
+  setHTML(el.build, html);
+  renderQuick();
+  el.hint.textContent = G.place ? "клікніть по мапі" : (G.sel ? "позицію обрано" : `позицій: ${G.towers.length}`);
+}
+
+function renderShop(){
+  setHTML(el.shop, SHOP.map(u => {
+    const lvl = G.up[u.id], maxed = lvl >= u.max, cost = u.cost(lvl);
+    const gated = u.need && G.wave < u.need;
+    const can = !maxed && !gated && G.money >= cost;
+    const bars = u.max > 1 ? `<span class="lvl-dots">${Array.from({length:u.max},(_,i)=>`<i class="${i<lvl?"on":""}"></i>`).join("")}</span>` : "";
+    return `
+      <button class="item" data-up="${u.id}" ${can?"":"disabled"} type="button">
+        <span class="glyph" style="font-size:13px;color:${maxed?"var(--ok)":"var(--gold)"}">${maxed?"✓":(u.unlock?"🔓":"▲")}</span>
+        <span>
+          <span class="name">${u.n}</span>
+          <span class="desc">${u.d}${gated?` · з хвилі ${u.need}`:""}</span>
+          ${bars}
+        </span>
+        <span class="cost ${can?"":"no"}">${maxed?"макс":cost+" ₴"}</span>
+      </button>`;
+  }).join(""));
+}
+
+let cityRows = null;
+function buildCityRows(){
+  el.citylist.innerHTML = G.cities.map((c,i) => `
+    <div class="cityrow" data-row="${i}">
+      <span class="n">${c.n}</span>
+      <span class="bar"><i></i></span>
+      <span class="hp"></span>
+      <button class="rep" data-rep="${i}" type="button" title="Плавна відбудова за ₴">🔧</button>
+    </div>`).join("");
+  cityRows = G.cities.map((c,i) => {
+    const row = el.citylist.querySelector(`[data-row="${i}"]`);
+    return {row, bar:row.querySelector(".bar i"), hp:row.querySelector(".hp"), btn:row.querySelector(".rep")};
+  });
+}
+function renderCities(){
+  if(!cityRows || cityRows.length !== G.cities.length) buildCityRows();
+  G.cities.forEach((c,i) => {
+    const r = cityRows[i];
+    const ratio = Math.max(0, c.hp/c.max);
+    const col = c.hp<=0 ? "#4b5560" : (ratio>0.5?"var(--ok)":(ratio>0.25?"var(--gold)":"var(--alarm)"));
+    const txt = `${Math.round(c.hp)}/${c.max}`;
+    if(r.hp.textContent !== txt) r.hp.textContent = txt;
+    r.bar.style.width = ratio*100 + "%";
+    r.bar.style.background = col;
+    r.row.classList.toggle("out", c.hp <= 0);
+    r.btn.classList.toggle("on", !!c.rep);
+    const full = c.hp >= c.max;
+    if(r.btn.disabled !== full) r.btn.disabled = full;
+  });
+  const rate = 2.6 * (0.6 + G.mood/100*0.8) * (1 + 0.35*G.up.crews) * (1 + 0.5*G.perk.p_rep);
+  const price = 1.15 * (1 - 0.2*G.perk.p_rep);
+  el.citiesSum.textContent = `${G.cities.filter(c=>c.hp>0).length} / ${G.cities.length} тримаються`;
+  const note = `Відбудова: ${rate.toFixed(1)} HP/с за ${(rate*price).toFixed(1)} ₴/с · з руїн удвічі повільніше й дорожче`;
+  if(el.repnote.textContent !== note) el.repnote.textContent = note;
+}
+
+function renderCabinet(){
+  const used = G.cabUsed === G.wave;
+  el.cab.disabled = used || G.over;
+  el.cab.textContent = used ? "Засідання вже було цієї хвилі" : "Скликати засідання";
+  el.cabHint.textContent = used ? "наступне — з новою хвилею" : "1 рішення на хвилю";
+  const items = [];
+  for(const e of G.effects){
+    if(e.waves > 900) items.push(`<span class="eff good">${e.n}</span>`);
+    else items.push(`<span class="eff ${e.good?"good":"bad"}">${e.n} · ${e.waves} хв.</span>`);
+  }
+  if(G.promise) items.push(`<span class="eff bad">Обіцянка перемоги · пропусків ${G.promise.leaks}/3</span>`);
+  if(G.fund) items.push(`<span class="eff good">Резервний фонд ×${G.fund}</span>`);
+  setHTML(el.efflist, items.join("") || `<span class="eff">Активних ефектів немає</span>`);
+  const ping = tabsEl && tabsEl.querySelector('[data-tab="cab"]');
+  if(ping) ping.classList.toggle("ping", !used && !G.over);
+}
+
+/* ─── швидка панель для телефона: засоби під мапою ─── */
+function renderQuick(){
+  if(!el.quick) return;
+  const row = TOWER_ORDER.map(k => {
+    const T_ = TOWERS[k], unl = !!G.unlocked[k], cost = towerCost(k), can = unl && G.money >= cost;
+    return `<button class="qbtn ${G.place===k?"active":""}" data-build="${k}" ${unl?"":"disabled"} type="button">
+      ${glyphSVG(k)}<span class="qn">${T_.short}</span><span class="cost ${can?"":"no"}">${unl ? cost+" ₴" : "🔒"}</span>
+    </button>`;
+  }).join("");
+  let extra = "";
+  if(G.place){
+    extra = `<div class="qnote">
+      <span>${G.ghost ? "Торкніться позначки ще раз або підтвердьте" : `Торкніться мапи, щоб обрати місце для ${TOWERS[G.place].short}`}</span>
+      <span class="qact">
+        ${G.ghost ? `<button class="btn sm primary" data-confirm="1" type="button">Розгорнути</button>` : ""}
+        <button class="btn sm" data-cancel="1" type="button">Скасувати</button>
+      </span></div>`;
+  } else if(G.sel){
+    const t = G.sel, T_ = TOWERS[t.k], lvl = t.lvl||1, maxed = lvl >= TOWER_MAXLVL;
+    extra = `<div class="qnote">
+      <span>${T_.short} · рівень ${lvl}/${TOWER_MAXLVL}</span>
+      <span class="qact">
+        <button class="btn sm" data-upg="1" ${maxed||G.money<upCost(t)?"disabled":""} type="button">${maxed?"Максимум":`Покращити ${upCost(t)} ₴`}</button>
+        <button class="btn sm danger" data-sell="1" type="button">Продати ${Math.round((t.spent||T_.cost)*0.6)} ₴</button>
+        <button class="btn sm" data-cancel="1" type="button" aria-label="Зняти виділення">✕</button>
+      </span></div>`;
+  }
+  setHTML(el.quick, `<div class="qrow">${row}</div>${extra}`);
+}
+
+function renderLegend(){
+  el.legend.innerHTML = Object.entries(ENEMIES).map(([k,d]) => `
+    <div class="row">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${d.c}"></span>
+      <span class="t">${d.n}</span>
+      <span class="k">${d.recon?"розвідка":CLS[d.cls]} · ${d.pay} ₴</span>
+    </div>`).join("")
+    + `<div class="row" style="margin-top:2px"><span></span><span class="k" style="grid-column:2/4;line-height:1.5">
+       Балістику й «Кинджали» дістає лише Patriot. КАБи й крилаті — ПЗРК та NASAMS. МВГ — тільки дрони.</span></div>`;
+}
+
+function renderLog(){
+  el.log.innerHTML = G.log.slice(-40).map(l =>
+    `<div class="${l.k}"><b>[${String(l.w).padStart(2,"0")}]</b> ${l.txt}</div>`).reverse().join("");
+}
+
+function renderPreview(){
+  if(G.phase !== "prep" || !G.nextWave){ el.preview.innerHTML = ""; return; }
+  const parts = Object.entries(G.nextWave).map(([k,n]) =>
+    `<span><span class="d" style="background:${ENEMIES[k].c}"></span><b>${ENEMIES[k].n}</b> ×${n}</span>`);
+  el.preview.innerHTML = `<span>Наступна хвиля:</span>` + parts.join("");
+}
+
+function renderHUD(){
+  const a = G.cities.reduce((s,c)=>s+c.hp,0), b = G.cities.reduce((s,c)=>s+c.max,0);
+  const sp = Math.round(a/b*100);
+  el.shield.textContent = sp + "%";
+  el.shield.parentElement.className = "stat " + (sp>60?"sky":(sp>30?"mood":"alarm"));
+  el.money.textContent = Math.round(G.money);
+  const md = Math.round(G.mood);
+  el.mood.textContent = md + "%";
+  el.mood.parentElement.className = "stat " + (md>60?"mood":(md>30?"sky":"alarm"));
+  el.mood.title = `Доходи ×${moodMul().toFixed(2)}`;
+  el.lvl.textContent = "Рів. " + G.level;
+  el.xp.textContent = `${Math.floor(G.xp)}/${xpNeed(G.level)}`;
+  el.xpbar.style.width = Math.min(100, G.xp/xpNeed(G.level)*100) + "%";
+  el.wave.textContent = G.wave;
+  el.streak.textContent = "×" + streakMul().toFixed(1);
+  el.streak.parentElement.title = `Серія збиттів без пропусків: ${G.streak}`;
+  el.leak.textContent = G.leaks;
+
+  if(G.phase === "prep"){
+    el.wlabel.textContent = `Підготовка до хвилі ${G.wave+1} · ${Math.ceil(G.prepLeft)} с`;
+    el.wmeter.classList.add("prep"); el.wmeter.classList.remove("dead");
+    el.wmeter.firstElementChild.style.width = (G.prepLeft/G.prepMax*100) + "%";
+    el.wbtn.disabled = false;
+    el.wbtn.textContent = `Почати хвилю (+${Math.round(G.prepLeft*4)} ₴)`;
+  } else if(G.phase === "wave"){
+    const left = G.spawnQueue.length + G.enemies.length;
+    const done = G.waveTotal ? (G.waveTotal-left)/G.waveTotal : 0;
+    el.wlabel.textContent = `Хвиля ${G.wave} · у небі ${G.enemies.length} · лишилось ${left}`;
+    el.wmeter.classList.remove("prep","dead");
+    el.wmeter.firstElementChild.style.width = (done*100) + "%";
+    el.wbtn.disabled = true;
+    el.wbtn.textContent = "Хвиля триває";
+  } else {
+    el.wlabel.textContent = `Оборону прорвано на хвилі ${G.wave}`;
+    el.wmeter.classList.remove("prep"); el.wmeter.classList.add("dead");
+    el.wmeter.firstElementChild.style.width = "100%";
+    el.wbtn.disabled = false;
+    el.wbtn.textContent = "Підсумок";
+  }
+}
+
+function renderBanner(){
+  if(G.mig){
+    el.banner.hidden = false;
+    el.bannerText.textContent = `МіГ-31К у повітрі · очікується пуск «Кинджалів» ×${G.mig.n}`;
+    el.bannerCd.textContent = Math.ceil(Math.max(0,G.mig.t)) + " с";
+  } else if(G.redAlert){
+    el.banner.hidden = false;
+    el.bannerText.textContent = "РЕЖИМ «БЛИСКАВКА» · загроза застосування «Орєшніка»";
+    el.bannerCd.textContent = "";
+  } else el.banner.hidden = true;
+}
+
+/* ══════════════ ВВІД ══════════════ */
+function pos(ev){
+  const r = cv.getBoundingClientRect();
+  return {x:(ev.clientX-r.left)*(W/r.width), y:(ev.clientY-r.top)*(H/r.height)};
+}
+cv.addEventListener("pointermove", ev => {
+  if(ev.pointerType === "touch") return;
+  const m = pos(ev); G.mouse = m; G.hover = null;
+  if(!G.place) for(const t of G.towers) if(Math.hypot(t.x-m.x, t.y-m.y) < 14*S){ G.hover = t; break; }
+  cv.style.cursor = G.place ? "crosshair" : (G.hover ? "pointer" : "default");
+});
+cv.addEventListener("pointerleave", () => { G.mouse = null; G.hover = null; });
+cv.addEventListener("pointerdown", ev => {
+  if(G.over || G.modal) return;
+  const m = pos(ev);
+  const touch = ev.pointerType === "touch" || ev.pointerType === "pen";
+  if(!touch) G.mouse = m;
+  for(const d of G.drops) if(Math.hypot(d.x-m.x, d.y-m.y) < 18*S){ collect(d); return; }
+  if(G.place){
+    if(touch){
+      /* палець закриває місце розміщення — тож перший дотик ставить позначку з радіусом,
+         другий дотик по ній (або кнопка «Розгорнути») підтверджує */
+      if(G.ghost && Math.hypot(G.ghost.x-m.x, G.ghost.y-m.y) < 26*S){
+        place(G.place, G.ghost.x, G.ghost.y);
+        G.place = null; G.ghost = null;
+      } else G.ghost = {x:m.x, y:m.y};
+    } else {
+      place(G.place, m.x, m.y);
+      if(!ev.shiftKey) G.place = null;
+    }
+    dirty.rail = true; return;
+  }
+  let hit = null;
+  for(const t of G.towers) if(Math.hypot(t.x-m.x, t.y-m.y) < 14*S) hit = t;
+  G.sel = hit;
+  dirty.rail = true;
+});
+cv.addEventListener("contextmenu", ev => {
+  ev.preventDefault();
+  const m = pos(ev);
+  for(const t of G.towers) if(Math.hypot(t.x-m.x, t.y-m.y) < 14){ sellTower(t); return; }
+});
+addEventListener("keydown", ev => {
+  if(G.modal) return;
+  if(ev.key === " "){ ev.preventDefault(); togglePause(); }
+  if(ev.key === "Escape"){ G.place = null; G.sel = null; G.ghost = null; dirty.rail = true; }
+  if(ev.key === "r" || ev.key === "R" || ev.key === "к" || ev.key === "К"){
+    for(const c of G.cities) if(c.hp < c.max) c.rep = true;
+    dirty.rail = true;
+  }
+  const i = "12345".indexOf(ev.key);
+  if(i >= 0){
+    const k = TOWER_ORDER[i];
+    if(G.unlocked[k]){ G.place = G.place === k ? null : k; G.sel = null; dirty.rail = true; }
+  }
+});
+
+el.build.addEventListener("click", ev => {
+  if(G.modal || G.over) return;
+  const b = ev.target.closest("[data-build]");
+  if(b){ const k = b.dataset.build; G.place = G.place === k ? null : k; G.sel = null; G.ghost = null; dirty.rail = true; return; }
+  if(ev.target.closest("[data-upg]")) upgradeTower(G.sel);
+  else if(ev.target.closest("[data-sell]")) sellTower(G.sel);
+});
+el.quick.addEventListener("click", ev => {
+  if(G.modal || G.over) return;
+  const b = ev.target.closest("[data-build]");
+  if(b){ const k = b.dataset.build; G.place = G.place === k ? null : k; G.sel = null; G.ghost = null; dirty.rail = true; return; }
+  if(ev.target.closest("[data-confirm]")){
+    if(G.place && G.ghost){ place(G.place, G.ghost.x, G.ghost.y); G.place = null; G.ghost = null; }
+    dirty.rail = true; return;
+  }
+  if(ev.target.closest("[data-cancel]")){ G.place = null; G.sel = null; G.ghost = null; dirty.rail = true; return; }
+  if(ev.target.closest("[data-upg]")) upgradeTower(G.sel);
+  else if(ev.target.closest("[data-sell]")) sellTower(G.sel);
+});
+
+const tabsEl = $("tabs");
+function showTab(id){
+  if(!tabsEl) return;
+  for(const b of tabsEl.querySelectorAll("[data-tab]")) b.classList.toggle("on", b.dataset.tab === id);
+  for(const m of document.querySelectorAll(".rail > .mod")) m.classList.toggle("on", m.dataset.tab === id);
+  try{ localStorage.setItem("ns-tab", id); }catch(e){}
+}
+if(tabsEl){
+  tabsEl.addEventListener("click", ev => { const b = ev.target.closest("[data-tab]"); if(b) showTab(b.dataset.tab); });
+  let firstTab = "cities";
+  try{ firstTab = localStorage.getItem("ns-tab") || "cities"; }catch(e){}
+  showTab(firstTab);
+}
+const rotateHint = $("rotate-hint");
+try{ if(localStorage.getItem("ns-rotate-ok")) rotateHint.classList.add("gone"); }catch(e){}
+$("rotate-x").onclick = () => {
+  rotateHint.classList.add("gone");
+  try{ localStorage.setItem("ns-rotate-ok","1"); }catch(e){}
+};
+
+el.shop.addEventListener("click", ev => {
+  if(G.modal || G.over) return;
+  const b = ev.target.closest("[data-up]");
+  if(!b) return;
+  const u = SHOP.find(x => x.id === b.dataset.up);
+  const lvl = G.up[u.id];
+  if(lvl >= u.max || (u.need && G.wave < u.need)) return;
+  const cost = u.cost(lvl);
+  if(G.money < cost){ SFX.denied(); return; }
+  G.money -= cost; G.up[u.id]++; G.stats.spentShop += cost;
+  if(u.unlock){ G.unlocked[u.unlock] = 1; say(`Контракт підписано: ${TOWERS[u.unlock].name}`, "good"); }
+  else say(`Штаб: ${u.n} → рівень ${G.up[u.id]}`, "good");
+  SFX.buy();
+  dirty.rail = true;
+});
+el.citylist.addEventListener("click", ev => {
+  if(G.modal || G.over) return;
+  const b = ev.target.closest("[data-rep]");
+  if(!b) return;
+  const c = G.cities[+b.dataset.rep];
+  if(!c) return;
+  c.rep = !c.rep;
+  if(c.rep && G.money < 20) tip("norep2", "Грошей обмаль: відбудова зупиниться, щойно бюджет спорожніє.");
+  else if(c.rep) tip("rep", "Відбудова списує гроші щосекунди, поки місто не стане цілим. Вимкнути можна тим самим 🔧.");
+  renderCities();
+});
+el.cab.addEventListener("click", openCabinet);
+el.card.addEventListener("click", ev => {
+  const d = ev.target.closest("[data-diff]");
+  if(d){
+    const k = d.dataset.diff;
+    G.diff = k; G.D = DIFF[k]; G.money = DIFF[k].start;
+    if(G.onb != null) showOnboarding(G.onb); else quickStart();
+    return;
+  }
+  const b = ev.target.closest("[data-pick]");
+  if(!b || !G.modal) return;
+  const ch = G.modal.cfg.choices[+b.dataset.pick];
+  pick(ch.k);
+});
+
+$("btn-wave").onclick = () => { if(G.modal) return; G.over ? showDefeat() : startWave(); };
+$("btn-restart").onclick = () => { el.veil.hidden = true; el.veil.className = "veil"; reset(); quickStart(); };
+$("btn-pause").onclick = togglePause;
+$("btn-speed").onclick = () => {
+  G.speed = G.speed === 1 ? 2 : (G.speed === 2 ? 3 : 1);
+  $("btn-speed").textContent = `×${G.speed}`;
+};
+$("btn-help").onclick = () => { if(!G.modal){ G.onb = 0; showOnboarding(0); } };
+function togglePause(){
+  if(G.over || G.modal) return;
+  G.paused = !G.paused;
+  if(G.paused) SFX.buzz(0);
+  $("btn-pause").textContent = G.paused ? "Продовжити" : "Пауза";
+}
+
+const soundBtn = $("btn-sound"), volSlider = $("vol"), audioBox = $("audio-box");
+function paintSound(){
+  soundBtn.textContent = SFX.on ? "🔊" : "🔇";
+  soundBtn.title = SFX.on ? "Вимкнути звук" : "Увімкнути звук";
+  audioBox.classList.toggle("off", !SFX.on);
+  volSlider.value = Math.round(SFX.vol*100);
+}
+soundBtn.onclick = () => { SFX.toggle(); paintSound(); };
+volSlider.oninput = () => { SFX.init(); SFX.setVol(volSlider.value/100); };
+paintSound();
+["pointerdown","touchend","click","keydown"].forEach(e => addEventListener(e, () => SFX.init(), {once:true, capture:true}));
+
+/* ══════════════ ЦИКЛ ══════════════ */
+let last = performance.now(), acc = 0, loopErr = 0;
+function frame(now){
+  try{ step(now); }
+  catch(err){ if(loopErr++ < 3) console.error("frame:", err); }
+  requestAnimationFrame(frame);
+}
+function step(now){
+  const dt = Math.min(0.05, (now-last)/1000);
+  last = now;
+  if(G.modal && G.modal.max > 0){
+    G.modal.timer -= dt;
+    const bar = $("tbar"), sec = $("tsec");
+    if(bar) bar.style.width = Math.max(0, G.modal.timer/G.modal.max*100) + "%";
+    if(sec) sec.textContent = Math.ceil(Math.max(0, G.modal.timer)) + " с";
+    if(G.modal.timer <= 0) pick(G.modal.cfg.timeout);
+  }
+  if(coachTimer > 0){
+    coachTimer -= dt;
+    if(coachTimer <= 0) el.coach.hidden = true;
+  }
+  if(!G.paused && !G.over && !G.modal){
+    for(let i=0;i<G.speed;i++) update(dt);
+    let drones = 0;
+    for(const e of G.enemies) if(e.cls === "drone") drones++;
+    SFX.buzz(drones);
+  } else SFX.buzz(0);
+  draw();
+  acc += dt;
+  if(acc > 0.1){
+    acc = 0;
+    renderHUD(); renderCities(); renderBanner(); renderPreview();
+    if(dirty.rail){ renderBuild(); renderShop(); renderCabinet(); dirty.rail = false; }
+    if(dirty.log){ renderLog(); dirty.log = false; }
+  }
+}
+
+/* ══════════════ ЗБЕРЕЖЕННЯ ══════════════ */
+/* Партія переживає перезавантаження сторінки: знімок робиться після кожної хвилі
+   та коли вкладку ховають. Хвиля, що триває, переграється з фази підготовки. */
+function snapshot(){
+  if(!G) return null;
+  return {
+    v:3, diff:G.diff, over:G.over,
+    money:G.money, mood:G.mood, xp:G.xp, level:G.level,
+    wave: G.phase === "wave" ? Math.max(0, G.wave-1) : G.wave,
+    kills:G.kills, leaks:G.leaks,
+    cities:G.cities.map(c => ({hp:c.hp, max:c.max})),
+    towers:G.towers.map(t => ({k:t.k, x:t.x, y:t.y, lvl:t.lvl||1, spent:t.spent||TOWERS[t.k].cost})),
+    unlocked:{...G.unlocked}, up:{...G.up}, perk:{...G.perk},
+    effects:G.effects.map(e => ({...e})),
+    fund:G.fund, selfBoost:G.selfBoost||0, pendingPerks:G.pendingPerks||0,
+    luckBets:G.luckBets||0, luckWins:G.luckWins||0,
+    stats:G.stats, log:G.log.slice(-30), tips:G.tips, lastChance:G.lastChance
+  };
+}
+function restore(d){
+  reset(d.diff || "normal");
+  G.money = d.money; G.mood = d.mood; G.xp = d.xp; G.level = d.level;
+  G.wave = d.wave; G.kills = d.kills; G.leaks = d.leaks;
+  G.unlocked = {...G.unlocked, ...d.unlocked};
+  G.up = {...G.up, ...d.up};
+  G.perk = {...G.perk, ...d.perk};
+  G.effects = d.effects || [];
+  G.fund = d.fund || 0; G.selfBoost = d.selfBoost || 0; G.pendingPerks = d.pendingPerks || 0;
+  G.luckBets = d.luckBets || 0; G.luckWins = d.luckWins || 0;
+  if(d.stats) G.stats = {...G.stats, ...d.stats};
+  G.log = d.log || []; G.tips = d.tips || {};
+  G.lastChance = d.lastChance !== false;
+  (d.cities||[]).forEach((c,i) => { if(G.cities[i]){ G.cities[i].max = c.max; G.cities[i].hp = Math.min(c.hp, c.max); } });
+  G.towers = (d.towers||[]).filter(t => TOWERS[t.k])
+    .map(t => ({k:t.k, x:t.x, y:t.y, cd:0, ang:-1.57, rec:0, lvl:t.lvl||1, spent:t.spent}));
+  G.phase = "prep";
+  G.prepMax = G.prepLeft = Math.min(34, 20 + G.wave);
+  G.nextWave = previewWave(G.wave + 1);
+  cityRows = null;
+  dirty.rail = true; dirty.log = true;
+}
+const saveGame  = () => { try{ const s = snapshot(); if(s && !s.over) localStorage.setItem("ns-save", JSON.stringify(s)); }catch(e){} };
+const loadSave  = () => { try{ const r = localStorage.getItem("ns-save"); return r ? JSON.parse(r) : null; }catch(e){ return null; } };
+const clearSave = () => { try{ localStorage.removeItem("ns-save"); }catch(e){} };
+addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden" && G && !G.over) saveGame(); });
+addEventListener("pagehide", () => { if(G && !G.over) saveGame(); });
+
+function renderAll(){
+  renderLegend(); renderBuild(); renderShop(); renderCabinet();
+  renderLog(); renderHUD(); renderPreview(); renderCities();
+}
+function askContinue(d){
+  ask({
+    tone:"perk", eyebrow:"Знайдено збережену партію",
+    title:`Продовжити з хвилі ${d.wave+1}?`,
+    body:`Оборона, збережена автоматично: рівень командування <b>${d.level}</b>, бюджет <b>${Math.round(d.money)} ₴</b>,
+          настрій <b>${Math.round(d.mood)}%</b>, позицій на мапі: <b>${(d.towers||[]).length}</b>.
+          Партія зберігається після кожної хвилі, тож перезавантаження сторінки більше не обнуляє прогрес.`,
+    choices:[
+      {t:"Продовжити оборону", s:`Хвиля ${d.wave+1}, все на своїх місцях.`, k:"go"},
+      {t:"Почати нову партію", s:"Збережену оборону буде стерто.", k:"new", bold:true}
+    ],
+    onPick: k => {
+      if(k === "new"){ clearSave(); reset(); renderAll(); quickStart(); }
+      else { startGame(); renderAll(); }
+    }
+  });
+}
+
+/* ══════════════ СТАРТ ══════════════ */
+function boot(hotData){
+  reset("normal");
+  G.paused = true;
+  const saved = (hotData && hotData.game) || loadSave();
+  if(saved && saved.wave >= 1 && !saved.over){
+    restore(saved);
+    renderAll();
+    if(hotData && hotData.game){ G.paused = false; say("Сторінку оновлено — партію відновлено", "good"); }
+    else askContinue(saved);
+  } else {
+    renderAll();
+    let seen = false;
+    try{ seen = !!localStorage.getItem("ns-seen"); }catch(e){}
+    if(seen) quickStart(); else showOnboarding(0);
+  }
+  measure();
+  if(window.ResizeObserver) new ResizeObserver(measure).observe(cv);
+  addEventListener("resize", measure);
+  addEventListener("orientationchange", () => setTimeout(measure, 250));
+  requestAnimationFrame(frame);
+}
+const hot = (window.claude && window.claude.hot) ? window.claude.hot : null;
+try{ if(hot && hot.snapshot) hot.snapshot(() => ({game: snapshot()})); }catch(e){}
+if(hot && hot.ready) hot.ready(d => boot(d || {}));
+else boot((hot && hot.data) || {});
+})();
+</script>
+</body>
+</html>
