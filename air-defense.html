@@ -128,6 +128,8 @@
   .meter.dead i{background:var(--alarm)}
   .preview{display:flex;gap:9px;flex-wrap:wrap;font-family:var(--font-m);font-size:10.5px;color:var(--ink-faint);width:100%}
   .preview b{color:var(--ink-dim);font-weight:400}
+  .preview .pw{flex-basis:100%;color:#c98a8f}
+  .preview .massive{color:var(--alarm);font-weight:600;letter-spacing:.06em}
   .preview .d{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:4px;vertical-align:middle}
 
   /* ── консоль ── */
@@ -534,8 +536,10 @@
       засоби ППО на мапі й не пускаєте їх до шести міст, у кожного з яких є власний запас міцності.</p>
       <p>Уся економіка тримається на трьох речах: <b>бюджет</b> у гривнях, який дають збиті цілі, трофеї
       й податки; <b>настрій населення</b>, що росте від збиттів, падає від влучань і множить усі доходи;
-      та <b>досвід</b>, який відкриває перки командування. Окремим шаром — події: зліт МіГ-31К,
-      загроза «Орєшніка» зі ставкою 20/80, пакети партнерів і популістичні рішення кабінету.</p>
+      та <b>досвід</b>, який відкриває перки командування. Кожна хвиля сильніша за попередню — більше цілей,
+      щільніші залпи, міцніші й швидші ракети, а кожна п'ята хвиля — масований удар. Окремим шаром — події,
+      що приходять будь-коли, навіть у тиші між хвилями: зліт МіГ-31К і загроза «Орєшніка» зі ставкою 20/80;
+      а ще пакети партнерів і популістичні рішення кабінету.</p>
       <p>Гра написана на чистому Canvas і WebAudio — без ігрових рушіїв, зовнішніх бібліотек, зображень
       і звукових файлів: увесь супровід синтезується просто у браузері. ТТХ засобів і цілей навмисно
       спрощені, мапа стилізована — це гра, а не симулятор.</p>
@@ -732,6 +736,7 @@ const ENEMIES = {
   cruise:   {n:"Х-101 / «Калібр»",   cls:"cruise",    hp:5, sp:108, dmg:18, pay:36, xp:17, joy:0.60, r:8,  c:"#b9cbdd"},
   kab:      {n:"КАБ",                cls:"kab",       hp:3, sp:132, dmg:22, pay:30, xp:15, joy:0.50, r:8,  c:"#ffcb3d"},
   ballistic:{n:"«Іскандер»",         cls:"ballistic", hp:7, sp:206, dmg:34, pay:75, xp:32, joy:1.20, r:9,  c:"#ff5a6e"},
+  jet:      {n:"Shahed-238 (реактивний)", cls:"drone", hp:5, sp:98, dmg:14, pay:26, xp:13, joy:0.40, r:9, c:"#e8603c"},
   kinzhal:  {n:"«Кинджал» (МіГ-31К)",cls:"ballistic", hp:9, sp:248, dmg:40, pay:100,xp:42, joy:1.60, r:10, c:"#ff9a3d"}
 };
 
@@ -899,14 +904,31 @@ function addXP(n){
 }
 
 /* ══════════════ ХВИЛІ ══════════════ */
+/* Рівень загрози росте з кожною хвилею одразу по кількох осях: більше цілей, міцніші,
+   швидші, влучання болючіші, а з 6-ї хвилі цілі йдуть щільними залпами з одного напрямку.
+   Кожна п'ята хвиля — масований удар: у півтора раза більше цілей. */
+const THREAT = {hpLin:0.10, hpExp:1.05, spd:0.016, spdCap:0.40, dmg:0.045, pay:0.02, massive:1.45};
+const isMassive = n => n >= 5 && n % 5 === 0;
+function threat(n){
+  const k = Math.max(0, n-1);
+  return {
+    hp: (1 + THREAT.hpLin*k) * Math.pow(THREAT.hpExp, k),
+    speed: 1 + Math.min(THREAT.spdCap, THREAT.spd*k),
+    dmg: 1 + THREAT.dmg*k,
+    pay: 1 + THREAT.pay*k,
+    salvo: n >= 6 ? Math.min(8, 2 + Math.floor(n/4)) : 1
+  };
+}
 function previewWave(n){
   const c = {};
-  c.shahed = 4 + Math.floor(n*1.8);
-  if(n >= 2) c.cruise = Math.ceil(n/2.5);
-  if(n >= 3) c.orlan = 1 + Math.floor(n/5);
-  if(n >= 4) c.lancet = Math.floor((n-2)/2);
-  if(n >= 6) c.kab = Math.floor((n-4)/2);
-  if(n >= 8) c.ballistic = Math.floor((n-6)/2);
+  const m = isMassive(n) ? THREAT.massive : 1;
+  c.shahed = Math.round((4 + n*2 + n*n/30) * m);
+  if(n >= 2) c.cruise = Math.round(Math.ceil(n/2) * m);
+  if(n >= 3) c.orlan = 1 + Math.floor(n/4);
+  if(n >= 4) c.lancet = Math.round(Math.floor((n-1)/2) * m);
+  if(n >= 5) c.kab = Math.round(Math.floor((n-3)/2) * m);
+  if(n >= 7) c.ballistic = Math.round(Math.floor((n-4)/2) * m);
+  if(n >= 9) c.jet = Math.round(Math.floor((n-6)/2) * m);
   for(const k in c) if(!c[k]) delete c[k];
   return c;
 }
@@ -915,12 +937,21 @@ function buildWave(n){
   const q = [];
   for(const type in comp) for(let i=0;i<comp[type];i++) q.push({type});
   for(let i=q.length-1;i>0;i--){ const j = (Math.random()*(i+1))|0; [q[i],q[j]] = [q[j],q[i]]; }
+  const gap = Math.max(0.24, 1.45 - n*0.06);
+  const salvo = threat(n).salvo;
+  const sides = ["north","east","south","northeast"];
   let t = 0;
-  const gap = Math.max(0.42, 1.5 - n*0.05);
-  for(const e of q){ e.at = t; t += gap*(0.5 + Math.random()); }
+  for(let i=0;i<q.length;i+=salvo){
+    const side = sides[(Math.random()*sides.length)|0];
+    const end = Math.min(q.length, i+salvo);
+    for(let j=i;j<end;j++){ q[j].at = t + (j-i)*0.2; q[j].side = salvo > 1 ? side : null; }
+    t += gap*(0.5 + Math.random()) * (salvo > 1 ? salvo*0.85 : 1);
+  }
   return q;
 }
-const hpScale = n => (1 + 0.09*(n-1)) * G.D.hp;
+const hpScale = n => threat(n).hp * G.D.hp;
+const ewResist = () => Math.max(0.3, 1 - 0.035*Math.max(0, G.wave-1));   // частка дронів, яку ще бере РЕБ
+const ewCrash  = () => Math.max(0.2, 0.65 - 0.025*Math.max(0, G.wave-1)); // шанс, що заглушений дрон впаде
 
 function startWave(){
   if(G.phase !== "prep" || G.over) return;
@@ -933,7 +964,16 @@ function startWave(){
   G.phase = "wave"; G.waveT = 0;
   G.alarm = 1;
   SFX.siren();
-  say(`ХВИЛЯ ${G.wave}. Повітряна тривога — ${G.waveTotal} цілей.`, "hit");
+  const tr = threat(G.wave);
+  if(isMassive(G.wave)){
+    G.shake = 0.6;
+    setTimeout(() => SFX.siren(), 1600);
+    say(`МАСОВАНИЙ УДАР! Хвиля ${G.wave}: ${G.waveTotal} цілей, залпи по ${tr.salvo}.`, "hit");
+  } else {
+    say(`ХВИЛЯ ${G.wave}. Повітряна тривога — ${G.waveTotal} цілей${tr.salvo>1?`, залпи по ${tr.salvo}`:""}.`, "hit");
+  }
+  if(G.wave === 10) tip("ewres", "Нові партії дронів стійкіші до РЕБ: його все важче заглушити, і дедалі більше заглушених відновлюють курс. РЕБ тепер — підсилення, а не заміна вогневих позицій.");
+  if(G.wave === 6) tip("salvo", "З цієї хвилі цілі йдуть залпами — по кілька з одного напрямку одночасно. Одинокі позиції захлинаються: ставте засоби групами.");
   dirty.rail = true;
 }
 
@@ -976,10 +1016,11 @@ function endWave(){
 }
 
 /* ══════════════ СПАВН ══════════════ */
-function spawnPoint(type){
+function spawnPoint(type, salvoSide){
   const d = ENEMIES[type];
   let side;
-  if(d.cls === "ballistic" || d.cls === "kab") side = Math.random() < 0.8 ? "east" : "northeast";
+  if(salvoSide && (d.cls === "drone" || d.cls === "cruise")) side = salvoSide;
+  else if(d.cls === "ballistic" || d.cls === "kab") side = Math.random() < 0.8 ? "east" : "northeast";
   else if(d.cls === "cruise") side = Math.random() < 0.5 ? "north" : "south";
   else side = ["north","east","south","northeast"][(Math.random()*4)|0];
   const m = 42;
@@ -998,15 +1039,15 @@ function pickCity(from){
   for(const o of scored){ r -= o.w; if(r <= 0) return o.c; }
   return alive[0];
 }
-function spawn(type){
+function spawn(type, side){
   const d = ENEMIES[type];
-  const s = spawnPoint(type);
+  const s = spawnPoint(type, side);
   const city = pickCity(s);
   if(!city) return;
   const hp = d.hp * hpScale(G.wave);
   G.enemies.push({
     type, cls:d.cls, x:s.x, y:s.y, hp, max:hp,
-    sp: d.sp*(0.92 + Math.random()*0.16), r:d.r, tx:city,
+    sp: d.sp * threat(G.wave).speed * (0.92 + Math.random()*0.16), r:d.r, tx:city,
     slow:0, jam:0, dead:false, ang:0, trail:[], wob:Math.random()*6.28
   });
 }
@@ -1023,7 +1064,7 @@ function update(dt){
     if(G.prepLeft <= 0){ G.prepLeft = 0; startWave(); }
   } else {
     G.waveT += dt;
-    while(G.spawnQueue.length && G.spawnQueue[0].at <= G.waveT) spawn(G.spawnQueue.shift().type);
+    while(G.spawnQueue.length && G.spawnQueue[0].at <= G.waveT){ const it = G.spawnQueue.shift(); spawn(it.type, it.side); }
   }
 
   for(const e of G.enemies) e.slow = 0;
@@ -1036,9 +1077,9 @@ function update(dt){
       if(!jammable) continue;
       if(Math.hypot(e.x-t.x, e.y-t.y) < R){
         e.slow = e.cls === "drone" ? 0.55 : 0.25;
-        if(!e.jam && e.cls === "drone" && Math.random() < 0.27*dt){
+        /* нові партії дронів дедалі стійкіші до РЕБ: шанс заглушити падає з хвилями */
+        if(!e.jam && !(e.jamCd > 0) && e.cls === "drone" && Math.random() < 0.27*ewResist()*dt){
           e.jam = 1; e.jamT = 1.4 + Math.random();
-          say(`РЕБ збив з курсу ${ENEMIES[e.type].n}`, "good");
         }
       }
     }
@@ -1047,11 +1088,16 @@ function update(dt){
   for(const e of G.enemies){
     if(e.dead) continue;
     const spd = e.sp*(1 - e.slow);
+    if(e.jamCd > 0) e.jamCd -= dt;
     if(e.jam){
       e.jamT -= dt; e.wob += dt*5;
       e.x += Math.cos(e.wob)*spd*dt; e.y += Math.sin(e.wob*1.3)*spd*dt;
       e.ang = e.wob;
-      if(e.jamT <= 0) kill(e);
+      if(e.jamT <= 0){
+        /* заглушений дрон не гине автоматично: частина падає, решта відновлює навігацію */
+        if(Math.random() < ewCrash()){ say(`РЕБ поклав ${ENEMIES[e.type].n}`, "good"); kill(e); }
+        else { e.jam = 0; e.jamCd = 3; e.tx = pickCity(e); }
+      }
       continue;
     }
     if(!e.tx || e.tx.hp <= 0) e.tx = pickCity(e);
@@ -1140,14 +1186,25 @@ function update(dt){
 }
 
 /* ─── плавна відбудова ─── */
+/* Під час тривоги бригади в укриттях: у хвилю відбудова йде на 20%, на повну — лише в тиші.
+   Матеріали дорожчають із кожною хвилею. Інакше пізні гроші безмежно «лікували» міста. */
+const UNDER_FIRE = 0.2;
+function repairRate(ruins){
+  return 2.6 * (0.6 + G.mood/100*0.8) * (1 + 0.35*G.up.crews) * (1 + 0.5*G.perk.p_rep)
+       * (ruins ? 0.5 : 1) * (G.phase === "wave" ? UNDER_FIRE : 1);
+}
+function repairPrice(ruins){
+  return 1.15 * (ruins ? 2 : 1) * (1 - 0.2*G.perk.p_rep) * (1 + 0.03*Math.max(0, G.wave-1));
+}
 function rebuild(dt){
   let spent = 0;
   for(const c of G.cities){
     if(!c.rep) continue;
     if(c.hp >= c.max){ c.rep = false; dirty.rail = true; continue; }
     const ruins = c.hp <= 0;
-    const speed = 2.6 * (0.6 + G.mood/100*0.8) * (1 + 0.35*G.up.crews) * (1 + 0.5*G.perk.p_rep) * (ruins?0.5:1);
-    const price = 1.15 * (ruins?2:1) * (1 - 0.2*G.perk.p_rep);
+    if(ruins && G.phase === "wave") continue;   // з руїн піднімаємо лише в тиші між хвилями
+    const speed = repairRate(ruins);
+    const price = repairPrice(ruins);
     const want = speed*dt;
     const cost = want*price;
     if(G.money >= cost){
@@ -1174,7 +1231,7 @@ function kill(e){
   G.stats.by[e.type] = (G.stats.by[e.type]||0) + 1;
   boom(e.x, e.y, e.cls==="ballistic"?1.5:1, d.c);
   SFX.boom(e.cls==="ballistic"?1.5:1);
-  const pay = Math.round(d.pay * payMul() * (1 + 0.25*G.up.volun));
+  const pay = Math.round(d.pay * payMul() * (1 + 0.25*G.up.volun) * threat(G.wave).pay);
   dropCoin(e.x, e.y, pay, d.cls !== "drone");
   addXP(d.xp);
   const joy = d.joy * (1 + 0.8*G.perk.p_mood);
@@ -1197,7 +1254,7 @@ function impact(e){
     boom(c.x, c.y, 0.6, "#9aae6b");
     return;
   }
-  const dmg = d.dmg * cityDmgMul() * (1 + 0.02*G.wave);
+  const dmg = d.dmg * cityDmgMul() * threat(G.wave).dmg;
   c.hp = Math.max(0, c.hp - dmg);
   c.flash = 1;
   G.leaks++; G.waveLeaks++;
@@ -1270,8 +1327,11 @@ function collect(d){
 function events(dt){
   if(G.modal || G.over) return;
   for(const k in G.cd) G.cd[k] = Math.max(0, G.cd[k] - dt);
-  if(G.phase === "wave" && G.wave >= 7 && !G.mig && G.cd.mig <= 0 && Math.random() < 0.05*dt) migTakeoff();
-  if(G.wave >= 9 && G.cd.ore <= 0 && Math.random() < 0.035*dt) oreshnikThreat();
+  /* обидві загрози не прив'язані до хвиль: можуть прийти й у тиші між ними —
+     у підготовку шанс навіть вищий, бо саме тоді на них не чекають */
+  const calm = G.phase === "prep";
+  if(G.wave >= 6 && !G.mig && G.cd.mig <= 0 && Math.random() < (calm ? 0.09 : 0.05)*dt) migTakeoff();
+  if(G.wave >= 8 && G.cd.ore <= 0 && Math.random() < (calm ? 0.06 : 0.035)*dt) oreshnikThreat();
   if(G.phase === "prep" && G.wave >= 3 && G.cd.aid <= 0 && Math.random() < 0.06*dt) partnersCall();
   if(G.mig){
     G.mig.t -= dt;
@@ -1284,15 +1344,15 @@ function events(dt){
   }
 }
 function migTakeoff(){
-  G.cd.mig = 85 + Math.random()*70;
+  G.cd.mig = Math.max(45, 110 - G.wave*3) + Math.random()*50;
   const lead = 11 + Math.random()*8;
-  G.mig = {t:lead, n:1 + (G.wave>=12?1:0) + (Math.random()<0.35?1:0), max:lead};
+  G.mig = {t:lead, n:Math.min(5, 1 + Math.floor((G.wave-6)/4) + (Math.random()<0.35?1:0)), max:lead};
   G.alarm = 1; SFX.siren();
-  say(`РОЗВІДКА: зліт МіГ-31К — носія «Кинджалів». Пуск за ~${Math.round(lead)} с`, "hit");
+  say(`РОЗВІДКА${G.phase==="prep"?" (тиша між хвилями)":""}: зліт МіГ-31К — носія «Кинджалів». Пуск за ~${Math.round(lead)} с`, "hit");
 }
 
 function oreshnikThreat(){
-  G.cd.ore = 180 + Math.random()*140;
+  G.cd.ore = Math.max(110, 230 - G.wave*6) + Math.random()*90;
   G.redAlert = 1; G.alarm = 1; SFX.siren();
   const cost = Math.floor(G.money*0.3);
   const free = G.fund > 0;
@@ -1353,13 +1413,13 @@ function resolveOreshnik(k, cost, free){
   const main = alive.length ? alive[(Math.random()*alive.length)|0] : null;
   let total = 0, lost = 0;
   if(main){
-    const d = 64*mult;
+    const d = 64*mult*threat(G.wave).dmg;
     main.hp = Math.max(0, main.hp-d); main.flash = 1; total += d;
     boom(main.x, main.y, 2.6, "#ff9a3d");
     for(const c of G.cities){
       if(c === main || c.hp <= 0) continue;
       if(Math.hypot(c.x-main.x, c.y-main.y) < 240){
-        const dd = 18*mult;
+        const dd = 18*mult*threat(G.wave).dmg;
         c.hp = Math.max(0, c.hp-dd); c.flash = 1; total += dd;
         boom(c.x, c.y, 1.1, "#ff9a3d");
       }
@@ -1623,7 +1683,8 @@ const SLIDES = [
     eyebrow:"Інструктаж · 1/5",
     title:"Ви — командний пункт ППО",
     body:`Росія б'є хвилями: дрони, крилаті та балістичні ракети. Ваше завдання — не пустити їх до шести міст.
-          У кожного міста є <b>запас міцності</b>; коли всі міста падають до нуля — оборону прорвано.`,
+          У кожного міста є <b>запас міцності</b>; коли всі міста падають до нуля — оборону прорвано.
+          <b>Кожна хвиля сильніша за попередню</b>: більше цілей, міцніші, швидші, а кожна п'ята — масований удар.`,
     html:`<div class="diffrow">${Object.entries(DIFF).map(([k,d])=>`
       <button class="diffbtn ${G.diff===k?"on":""}" data-diff="${k}" type="button">
         <span class="t">${d.n}</span><span class="s">${d.note}</span>
@@ -1678,8 +1739,10 @@ const SLIDES = [
       <div class="keyrow"><div class="ic">🚀</div><div class="tx"><b>ПЗРК і NASAMS</b> — дрони, крилаті ракети та КАБи.</div></div>
       <div class="keyrow"><div class="ic">🛰️</div><div class="tx"><b>Patriot</b> — єдиний, хто дістає балістику й «Кинджали» з МіГ-31К.</div></div>
       <div class="keyrow"><div class="ic">📡</div><div class="tx"><b>РЕБ</b> не стріляє: глушить дрони, збиває їх з курсу — і подвоює ефективність сусідніх позицій.</div></div>
-      <div class="keyrow"><div class="ic">⚡</div><div class="tx">Окремі події: зліт <b>МіГ-31К</b>, загроза <b>«Орєшніка»</b> (ставка 30% бюджету проти шансу 20/80)
-        і <b>пакети партнерів</b>, що дають гроші ціною настрою.</div></div>`
+      <div class="keyrow"><div class="ic">⚡</div><div class="tx">Зліт <b>МіГ-31К</b> і загроза <b>«Орєшніка»</b> (ставка 30% бюджету проти шансу 20/80)
+        можуть прийти <b>будь-коли — навіть у тиші між хвилями</b>. Ще є <b>пакети партнерів</b>, що дають гроші ціною настрою.</div></div>
+      <div class="keyrow"><div class="ic">🏗️</div><div class="tx">Під час тривоги ремонтні бригади в укриттях: відбудова йде лише на 20%,
+        а руїни піднімаються тільки в тиші між хвилями.</div></div>`
   })
 ];
 function showOnboarding(step){
@@ -1765,7 +1828,7 @@ function advice(){
   if(G.mood < 35) return "Настрій упав нижче 35% — усі доходи просіли майже на чверть. Кабінет рішень існує саме для цього: навіть «Заморозити тарифи» за 0 ₴ дає +12 рейтингу.";
   if(!G.up.crews && G.stats.spentRep < 100) return "Ви майже не користувалися відбудовою. Тримати міста повними дешевше, ніж втрачати їх: 1 HP коштує близько 1,2 ₴, а влучання «Іскандера» знімає 34.";
   if(G.stats.oreHits && !G.luckBets) return "«Орєшнік» діставав вас без жодного резерву. 30% бюджету зрізають шкоду вп'ятеро — на пізніх хвилях це дешевше, ніж відбудовувати два міста.";
-  if(!G.unlocked.patriot) return "Patriot так і не з'явився. З 7-ї хвилі приходять «Кинджали» з МіГ-31К, а їх не бере жоден інший засіб — контракт варто брати одразу, щойно назбираєте.";
+  if(!G.unlocked.patriot) return "Patriot так і не з'явився. З 6-ї хвилі в будь-який момент можуть прилетіти «Кинджали» з МіГ-31К, а їх не бере жоден інший засіб — контракт варто брати одразу, щойно назбираєте.";
   if(G.towers.filter(t => t.k === "reb").length === 0) return "Спробуйте РЕБ: він не стріляє, але вповільнює «шахеди» на 55%, і сусідні вогневі групи встигають зробити вдвічі більше пострілів.";
   return "Тримайте оборону ешелонами: далекобійні NASAMS на підході, дешеві вогневі групи щільним кільцем безпосередньо навколо міст.";
 }
@@ -2278,10 +2341,11 @@ function renderCities(){
     const full = c.hp >= c.max;
     if(r.btn.disabled !== full) r.btn.disabled = full;
   });
-  const rate = 2.6 * (0.6 + G.mood/100*0.8) * (1 + 0.35*G.up.crews) * (1 + 0.5*G.perk.p_rep);
-  const price = 1.15 * (1 - 0.2*G.perk.p_rep);
+  const rate = repairRate(false), price = repairPrice(false);
   el.citiesSum.textContent = `${G.cities.filter(c=>c.hp>0).length} / ${G.cities.length} тримаються`;
-  const note = `Відбудова: ${rate.toFixed(1)} HP/с за ${(rate*price).toFixed(1)} ₴/с · з руїн удвічі повільніше й дорожче`;
+  const note = G.phase === "wave"
+    ? `Тривога: бригади в укриттях — відбудова лише ${rate.toFixed(1)} HP/с (20%), руїни чекають тиші. На повну — між хвилями.`
+    : `Відбудова: ${rate.toFixed(1)} HP/с за ${(rate*price).toFixed(1)} ₴/с · з руїн удвічі повільніше й дорожче`;
   if(el.repnote.textContent !== note) el.repnote.textContent = note;
 }
 
@@ -2350,9 +2414,11 @@ function renderLog(){
 
 function renderPreview(){
   if(G.phase !== "prep" || !G.nextWave){ el.preview.innerHTML = ""; return; }
-  const parts = Object.entries(G.nextWave).map(([k,n]) =>
-    `<span><span class="d" style="background:${ENEMIES[k].c}"></span><b>${ENEMIES[k].n}</b> ×${n}</span>`);
-  el.preview.innerHTML = `<span>Наступна хвиля:</span>` + parts.join("");
+  const n = G.wave + 1, tr = threat(n);
+  const parts = Object.entries(G.nextWave).map(([k,c]) =>
+    `<span><span class="d" style="background:${ENEMIES[k].c}"></span><b>${ENEMIES[k].n}</b> ×${c}</span>`);
+  const power = `<span class="pw">міцність ×${(tr.hp*G.D.hp).toFixed(1)} · швидкість +${Math.round((tr.speed-1)*100)}% · шкода +${Math.round((tr.dmg-1)*100)}%${tr.salvo>1?` · залпи по ${tr.salvo}`:""}</span>`;
+  setHTML(el.preview, `<span>${isMassive(n)?`<b class="massive">МАСОВАНИЙ УДАР</b> · `:""}Наступна хвиля:</span>` + parts.join("") + (n > 1 ? power : ""));
 }
 
 function renderHUD(){
@@ -2528,6 +2594,7 @@ el.citylist.addEventListener("click", ev => {
   if(!c) return;
   c.rep = !c.rep;
   if(c.rep && G.money < 20) tip("norep2", "Грошей обмаль: відбудова зупиниться, щойно бюджет спорожніє.");
+  else if(c.rep && G.phase === "wave") tip("repfire", "Під час тривоги бригади в укриттях: відбудова йде лише на 20%. На повну швидкість вона запрацює, щойно хвиля мине.");
   else if(c.rep) tip("rep", "Відбудова списує гроші щосекунди, поки місто не стане цілим. Вимкнути можна тим самим 🔧.");
   renderCities();
 });
