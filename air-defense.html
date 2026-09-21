@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#080b11">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="Небесний Щит — браузерний tower defense про протиповітряну оборону України. Хвилі дронів і ракет, шість міст, бюджет, настрій населення й перки командування.">
+<meta name="description" content="Небесний Щит — браузерний tower defense про протиповітряну оборону України. Хвилі дронів і ракет, сім міст, бюджет, настрій населення й перки командування.">
 <meta property="og:title" content="Небесний Щит">
 <meta property="og:description" content="Tower defense про ППО України: хвилі дронів і ракет, відбудова міст, рішення кабінету й перки командування.">
 <meta property="og:type" content="website">
@@ -167,7 +167,7 @@
   .selbox .row .btn{flex:1}
 
   .citylist{display:flex;flex-direction:column;gap:7px}
-  .cityrow{display:grid;grid-template-columns:58px minmax(24px,1fr) 52px 26px;gap:8px;align-items:center;font-size:11.5px}
+  .cityrow{display:grid;grid-template-columns:84px minmax(24px,1fr) 52px 26px;gap:8px;align-items:center;font-size:11.5px}
   .cityrow .n{color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cityrow.out .n{color:var(--ink-faint)}
   .cityrow .bar{height:6px;background:#141d28;border-radius:1px;overflow:hidden}
@@ -392,7 +392,7 @@
     .rail > .mod{display:none}
     .rail > .mod.on{display:block}
     .rep{width:40px;height:34px;font-size:14px}
-    .cityrow{grid-template-columns:64px minmax(24px,1fr) 58px 40px}
+    .cityrow{grid-template-columns:88px minmax(24px,1fr) 58px 40px}
     .item{padding:10px}
     .choice{padding:13px 14px}
     .diffrow{grid-template-columns:minmax(0,1fr)}
@@ -533,7 +533,7 @@
       <h2>Про гру</h2>
       <p><b>Небесний Щит</b> — браузерний tower defense про протиповітряну оборону України.
       Хвилями йдуть «шахеди», крилаті та балістичні ракети, КАБи й розвідувальні дрони; ви розгортаєте
-      засоби ППО на мапі й не пускаєте їх до шести міст, у кожного з яких є власний запас міцності.</p>
+      засоби ППО на мапі й не пускаєте їх до семи міст, у кожного з яких є власний запас міцності.</p>
       <p>Уся економіка тримається на трьох речах: <b>бюджет</b> у гривнях, який дають збиті цілі, трофеї
       й податки; <b>настрій населення</b>, що росте від збиттів, падає від влучань і множить усі доходи;
       та <b>досвід</b>, який відкриває перки командування. Кожна хвиля сильніша за попередню — більше цілей,
@@ -671,7 +671,8 @@ const CITY_DEF = [
   {n:"Харків", lon:36.25, lat:49.99},
   {n:"Одеса", lon:30.73, lat:46.48},
   {n:"Дніпро", lon:35.05, lat:48.47},
-  {n:"Вінниця", lon:28.48, lat:49.23}
+  {n:"Вінниця", lon:28.48, lat:49.23},
+  {n:"Хмельницький", lon:26.99, lat:49.42, label:"nw"}   // підпис угорі-ліворуч: з обох боків тісно — Вінниця й Львів
 ];
 const OBLAST_HINT = [[26.0,50.6],[29.0,48.6],[32.5,50.6],[33.5,47.9],[37.0,48.8],[26.5,49.0]];
 
@@ -840,7 +841,7 @@ function reset(diff){
     cities: CITY_DEF.map(c => {
       const pt = P(c.lon,c.lat);
       const max = c.big ? 150 : 100;
-      return {n:c.n, x:pt.x, y:pt.y, max, hp:max, big:!!c.big, flash:0, rep:false};
+      return {n:c.n, x:pt.x, y:pt.y, max, hp:max, big:!!c.big, flash:0, rep:false, label:c.label};
     }),
     modal: null, redAlert: 0, mig: null, cd: {mig:75, ore:60, aid:35},
     log: [], tips: {}, t: 0, alarm: 0, sweep: 0, shake: 0,
@@ -1800,7 +1801,7 @@ const SLIDES = [
   () => ({
     eyebrow:"Інструктаж · 1/5",
     title:"Ви — командний пункт ППО",
-    body:`Росія б'є хвилями: дрони, крилаті та балістичні ракети. Ваше завдання — не пустити їх до шести міст.
+    body:`Росія б'є хвилями: дрони, крилаті та балістичні ракети. Ваше завдання — не пустити їх до семи міст.
           У кожного міста є <b>запас міцності</b>; коли всі міста падають до нуля — оборону прорвано.
           <b>Кожна хвиля сильніша за попередню</b>: більше цілей, міцніші, швидші, а кожна п'ята — масований удар.`,
     html:`<div class="diffrow">${Object.entries(DIFF).map(([k,d])=>`
@@ -1899,7 +1900,7 @@ function quickStart(){
   ask({
     tone:"perk", eyebrow:"Небесний Щит",
     title:"Оберіть складність",
-    body:"Шість міст, хвилі дронів і ракет, один бюджет і настрій населення, що множить усі доходи.",
+    body:"Сім міст, хвилі дронів і ракет, один бюджет і настрій населення, що множить усі доходи.",
     html:`<div class="diffrow">${Object.entries(DIFF).map(([k,d])=>`
       <button class="diffbtn ${G.diff===k?"on":""}" data-diff="${k}" type="button">
         <span class="t">${d.n}</span><span class="s">${d.note}</span>
@@ -2118,7 +2119,12 @@ function drawCities(){
     ctx.fillText(`${Math.round(c.hp)}/${c.max}`, c.x, by + bh + 8.5*S);
     ctx.font = `600 ${11*S}px 'IBM Plex Sans',sans-serif`;
     ctx.fillStyle = dead ? "#5d6874" : "#dbe6f2";
-    ctx.fillText(c.n, c.x, c.y - R - 6*S);
+    if(c.label === "nw"){
+      ctx.textAlign = "right";
+      ctx.font = `600 ${11*Math.min(S,1.45)}px 'IBM Plex Sans',sans-serif`;
+      ctx.fillText(c.n, c.x + 8*S, c.y - R - 6*S);
+    }
+    else ctx.fillText(c.n, c.x, c.y - R - 6*S);
     ctx.restore();
   }
 }
