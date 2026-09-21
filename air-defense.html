@@ -715,16 +715,17 @@ const DIFF = {
 const CLS = {drone:"дрон", cruise:"крилата", kab:"КАБ", ballistic:"балістика"};
 
 const TOWERS = {
-  mvg:    {name:"Мобільна вогнева група", short:"МВГ", cost:70, range:104, rate:3.0, dmg:1, hitscan:true,
+  mvg:    {name:"Мобільна вогнева група", short:"МВГ", cost:70, hp:45, range:104, rate:3.0, dmg:1, hitscan:true,
            hits:["drone"], color:"#7fe08a", desc:"Кулемет на пікапі. Дешево й швидко, але тільки по дронах."},
-  pzrk:   {name:"ПЗРК «Ігла» / Stinger", short:"ПЗРК", cost:165, range:142, rate:1.0, dmg:2.5,
+  pzrk:   {name:"ПЗРК «Ігла» / Stinger", short:"ПЗРК", cost:165, hp:55, range:142, rate:1.0, dmg:2.5,
            hits:["drone","cruise","kab"], color:"#5fd0ff", desc:"Переносний ЗРК: дрони, крилаті ракети та КАБи."},
-  reb:    {name:"РЕБ «Буковель»", short:"РЕБ", cost:210, range:174, rate:0, dmg:0, aura:true,
+  reb:    {name:"РЕБ «Буковель»", short:"РЕБ", cost:210, hp:70, range:174, rate:0, dmg:0, aura:true,
            hits:[], color:"#ffcb3d", desc:"Не стріляє. Глушить дрони: −55% швидкості, збиває з курсу."},
-  nasams: {name:"NASAMS", short:"NASAMS", cost:390, range:216, rate:0.95, dmg:3.5, locked:true,
+  nasams: {name:"NASAMS", short:"NASAMS", cost:390, hp:115, range:216, rate:0.95, dmg:3.5, locked:true,
            hits:["drone","cruise","kab"], color:"#4d8bff", desc:"Велика зона, надійно по крилатих і КАБах."},
-  patriot:{name:"Patriot", short:"Patriot", cost:820, range:308, rate:0.8, dmg:6, locked:true,
-           hits:["drone","cruise","kab","ballistic"], color:"#c08bff", desc:"Єдине, що дістає балістику. Дорого й повільно."}
+  patriot:{name:"Patriot", short:"Patriot", cost:820, hp:165, range:308, rate:0.8, dmg:6, locked:true,
+           hits:["cruise","ballistic"], color:"#c08bff",
+           desc:"Лише дорогі цілі: крилаті, «Іскандери», «Кинджали». Перехоплює блоки «Орєшніка». По дронах і КАБах не стріляє."}
 };
 const TOWER_ORDER = ["mvg","pzrk","reb","nasams","patriot"];
 const TOWER_MAXLVL = 3;
@@ -743,6 +744,7 @@ const ENEMIES = {
 /* постійні контракти штабу — за ₴ */
 const SHOP = [
   {id:"radar",    n:"Радар раннього виявлення", d:"+8% радіус усіх засобів",     max:5, cost:l=>120+70*l},
+  {id:"fort",     n:"Інженерне укріплення позицій", d:"+20% міцності всіх засобів ППО", max:5, cost:l=>110+65*l},
   {id:"ammo",     n:"Постачання боєприпасів",   d:"+10% швидкострільність",      max:5, cost:l=>110+65*l},
   {id:"crew",     n:"Вишкіл розрахунків",       d:"+12% шкоди по цілях",         max:5, cost:l=>140+80*l},
   {id:"shelter",  n:"Укриття та бомбосховища",  d:"−9% шкоди містам",            max:4, cost:l=>130+75*l},
@@ -755,6 +757,7 @@ const SHOP = [
 /* перки за рівень командування — без грошей, тільки вибір */
 const PERKS = [
   {id:"p_range", n:"Радарне поле",        d:"+10% радіус усіх засобів",                 max:3},
+  {id:"p_armor", n:"Капоніри й маскування",d:"+25% міцності засобів ППО",               max:2},
   {id:"p_rate",  n:"Логістика БК",         d:"+12% швидкострільність",                   max:3},
   {id:"p_dmg",   n:"Злагоджений розрахунок",d:"+15% шкоди по цілях",                     max:3},
   {id:"p_city",  n:"Бетон і підвали",      d:"−12% шкоди містам",                        max:3},
@@ -831,7 +834,7 @@ function reset(diff){
     kills: 0, leaks: 0, over: false, paused: false, speed: 1,
     place: null, sel: null, hover: null, mouse: null, ghost: null,
     unlocked: {mvg:1, pzrk:1, reb:1, nasams:0, patriot:0},
-    up: {radar:0, ammo:0, crew:0, shelter:0, crews:0, volun:0, u_nasams:0, u_patriot:0},
+    up: {radar:0, fort:0, ammo:0, crew:0, shelter:0, crews:0, volun:0, u_nasams:0, u_patriot:0},
     perk: {}, effects: [], promise: null, fund: 0,
     cabUsed: -1, lastChance: true,
     cities: CITY_DEF.map(c => {
@@ -1039,22 +1042,105 @@ function pickCity(from){
   for(const o of scored){ r -= o.w; if(r <= 0) return o.c; }
   return alive[0];
 }
+/* Частина озброєння полює саме на позиції ППО: «Ланцети» — на найближчу техніку,
+   КАБи — на позиції біля фронту, частина «Іскандерів» і «Кинджалів» — на Patriot і NASAMS. */
+const HUNT = {
+  lancet:    {p:0.85, reach:440},
+  kab:       {p:0.55, reach:320},
+  jet:       {p:0.20, reach:520},
+  ballistic: {p:0.35, reach:1e4, prefer:true},
+  kinzhal:   {p:0.30, reach:1e4, prefer:true}
+};
+function pickTowerTarget(from, type){
+  const h = HUNT[type];
+  if(!h) return null;
+  let best = null, bs = -1e9;
+  for(const t of G.towers){
+    if(t.gone) continue;
+    const d = Math.hypot(t.x-from.x, t.y-from.y);
+    if(d > h.reach) continue;
+    let sc = -d + Math.random()*60;
+    if(h.prefer) sc += t.k === "patriot" ? 900 : t.k === "nasams" ? 500 : 0;
+    if(sc > bs){ bs = sc; best = t; }
+  }
+  return best;
+}
+function retarget(e){
+  e.tx = (e.hunter && pickTowerTarget(e, e.type)) || pickCity(e);
+}
+const towerMaxHP = t => Math.round(TOWERS[t.k].hp * (1 + 0.25*((t.lvl||1)-1)) * (1 + 0.20*G.up.fort + 0.25*G.perk.p_armor));
+const towerHP = t => t.hp == null ? towerMaxHP(t) : t.hp;
+const fixCost = t => { const m = towerMaxHP(t); return Math.ceil((m - towerHP(t)) / m * TOWERS[t.k].cost * 0.4); };
+const sellValue = t => Math.round((t.spent || TOWERS[t.k].cost) * 0.6 * (0.4 + 0.6*towerHP(t)/towerMaxHP(t)));
+function damageTower(t, dmg, by){
+  if(!t || t.gone) return false;
+  t.hp = towerHP(t) - dmg; t.flash = 1;
+  G.texts.push({x:t.x, y:t.y - 16*S, t:`−${Math.round(dmg)}`, c:"#ff8f99", life:1.1});
+  if(G.sel === t) dirty.rail = true;
+  tip("towerhit", "Противник б'є по ваших позиціях! «Ланцети», КАБи й частина «Іскандерів» полюють на ППО. Пошкоджені позиції лагодяться між хвилями, а зруйновані — втрачено. Укріпити їх можна в Штабі.");
+  if(t.hp <= 0){ destroyTower(t, by); return true; }
+  return false;
+}
+function destroyTower(t, by){
+  t.gone = true; t.hp = 0;
+  G.towers = G.towers.filter(x => x !== t);
+  if(G.sel === t) G.sel = null;
+  G.stats.towersLost = (G.stats.towersLost || 0) + 1;
+  boom(t.x, t.y, 2, "#ff5a6e"); SFX.boom(2);
+  addMood(-3, `втрачено позицію ${TOWERS[t.k].short}`);
+  say(`Знищено позицію ${TOWERS[t.k].short}${by ? ` — ${by}` : ""}`, "hit");
+  dirty.rail = true;
+}
+function hitTower(e){
+  e.dead = true;
+  const d = ENEMIES[e.type], t = e.tx;
+  if(!t || t.gone) return;
+  G.streak = 0;
+  G.leaks++; G.waveLeaks++;
+  if(G.promise) G.promise.leaks++;
+  boom(t.x, t.y, 1.4, "#ff5a6e"); SFX.boom(1.4);
+  G.shake = Math.max(G.shake, 0.45);
+  /* мисливці несуть бойові частини саме проти техніки — по позиціях б'ють на 40% болючіше */
+  damageTower(t, d.dmg * 1.4 * threat(G.wave).dmg * G.D.dmg, d.n);
+}
+function fixTower(t){
+  if(!t || t.gone) return;
+  const c = fixCost(t);
+  if(c <= 0) return;
+  if(G.money < c){ SFX.denied(); return; }
+  G.money -= c; G.stats.spentRep += c;
+  t.hp = towerMaxHP(t);
+  SFX.build();
+  say(`${TOWERS[t.k].short} відремонтовано (−${c} ₴)`);
+  dirty.rail = true;
+}
+
 function spawn(type, side){
   const d = ENEMIES[type];
   const s = spawnPoint(type, side);
-  const city = pickCity(s);
+  let city = null, hunter = false;
+  if(HUNT[type] && Math.random() < HUNT[type].p){ city = pickTowerTarget(s, type); hunter = !!city; }
+  if(!city) city = pickCity(s);
   if(!city) return;
   const hp = d.hp * hpScale(G.wave);
   G.enemies.push({
     type, cls:d.cls, x:s.x, y:s.y, hp, max:hp,
     sp: d.sp * threat(G.wave).speed * (0.92 + Math.random()*0.16), r:d.r, tx:city,
-    slow:0, jam:0, dead:false, ang:0, trail:[], wob:Math.random()*6.28
+    slow:0, jam:0, dead:false, ang:0, trail:[], wob:Math.random()*6.28, hunter
   });
 }
 
 /* ══════════════ ОНОВЛЕННЯ ══════════════ */
 function update(dt){
   G.t += dt; G.sweep += dt*0.42;
+  /* міцність позицій: зростає з рівнем і контрактами; між хвилями розрахунки лагодять техніку */
+  for(const t of G.towers){
+    const m = towerMaxHP(t);
+    if(t.hp == null){ t.hp = m; t.maxSeen = m; }
+    else if(m !== t.maxSeen){ if(m > t.maxSeen) t.hp += m - t.maxSeen; t.maxSeen = m; t.hp = Math.min(t.hp, m); }
+    if(G.phase === "prep" && t.hp < m) t.hp = Math.min(m, t.hp + m*0.04*dt);
+    if(t.flash > 0) t.flash -= dt*2.5;
+  }
   if(G.alarm > 0) G.alarm = Math.max(0, G.alarm - dt*0.5);
   events(dt);
   rebuild(dt);
@@ -1096,11 +1182,11 @@ function update(dt){
       if(e.jamT <= 0){
         /* заглушений дрон не гине автоматично: частина падає, решта відновлює навігацію */
         if(Math.random() < ewCrash()){ say(`РЕБ поклав ${ENEMIES[e.type].n}`, "good"); kill(e); }
-        else { e.jam = 0; e.jamCd = 3; e.tx = pickCity(e); }
+        else { e.jam = 0; e.jamCd = 3; retarget(e); }
       }
       continue;
     }
-    if(!e.tx || e.tx.hp <= 0) e.tx = pickCity(e);
+    if(!e.tx || e.tx.gone || towerHP(e.tx) <= 0) retarget(e);
     if(!e.tx){ e.dead = true; continue; }
     const dx = e.tx.x-e.x, dy = e.tx.y-e.y, L = Math.hypot(dx,dy) || 1;
     e.ang = Math.atan2(dy,dx);
@@ -1241,6 +1327,7 @@ function kill(e){
   if(G.kills === 1) tip("kill", "Збита ціль лишає монети — вони самі летять на ваш баланс. Клік по монеті забирає її миттєво.");
 }
 function impact(e){
+  if(e.tx && e.tx.k){ hitTower(e); return; }
   e.dead = true;
   const d = ENEMIES[e.type];
   const c = e.tx;
@@ -1257,6 +1344,7 @@ function impact(e){
   const dmg = d.dmg * cityDmgMul() * threat(G.wave).dmg;
   c.hp = Math.max(0, c.hp - dmg);
   c.flash = 1;
+  for(const t of [...G.towers]) if(Math.hypot(t.x-c.x, t.y-c.y) < 40) damageTower(t, dmg*0.3, "уламки");
   G.leaks++; G.waveLeaks++;
   if(G.promise) G.promise.leaks++;
   G.alarm = 1; G.shake = 1;
@@ -1351,9 +1439,24 @@ function migTakeoff(){
   say(`РОЗВІДКА${G.phase==="prep"?" (тиша між хвилями)":""}: зліт МіГ-31К — носія «Кинджалів». Пуск за ~${Math.round(lead)} с`, "hit");
 }
 
+/* «Орєшнік» несе 6 бойових блоків. Кожна батарея Patriot, у зоні якої опинилася ціль,
+   перехоплює частину з них; кілька батарей перекривають одна одну. */
+const ORE_BLOCKS = 6;
+const patriotsCovering = c => c ? G.towers.filter(t => t.k === "patriot" && Math.hypot(t.x-c.x, t.y-c.y) <= towerRange(t)) : [];
+const patriotBlockChance = t => Math.min(0.6, 0.32 + 0.08*((t.lvl||1)-1) + 0.03*G.up.crew);
+const blockMissChance = pats => pats.reduce((m,t) => m*(1 - patriotBlockChance(t)), 1);
+
 function oreshnikThreat(){
   G.cd.ore = Math.max(110, 230 - G.wave*6) + Math.random()*90;
   G.redAlert = 1; G.alarm = 1; SFX.siren();
+  const alive = G.cities.filter(c => c.hp > 0);
+  const target = alive.length ? alive[(Math.random()*alive.length)|0] : null;
+  G.oreTarget = target;
+  const pats = patriotsCovering(target);
+  const expect = Math.round(ORE_BLOCKS * (1 - blockMissChance(pats)));
+  const cover = !target ? "" : pats.length
+    ? `<br>Імовірна ціль — <b>${target.n}</b>. Patriot у зоні ураження: <b>${pats.length}</b> — перехоплять у середньому ~${expect} з ${ORE_BLOCKS} бойових блоків.`
+    : `<br>Імовірна ціль — <b>${target.n}</b>. Жоден Patriot її не прикриває: усі ${ORE_BLOCKS} бойових блоків дійдуть до міста.`;
   const cost = Math.floor(G.money*0.3);
   const free = G.fund > 0;
   const acc = G.luckBets ? Math.round(G.luckWins/G.luckBets*100) : null;
@@ -1363,22 +1466,22 @@ function oreshnikThreat(){
     title:"Готується пуск «Орєшніка»",
     quote:"«Фіксуємо підготовку пускової. Тип бойової частини невідомий. Рішення потрібне зараз.»",
     body:`Резерв — це <b>30% бюджету</b> (${cost} ₴) на розосередження сил, укриття й додаткові розрахунки.
-          Гроші списуються одразу, незалежно від того, чим усе скінчиться.${free?"<br><b>Резервний фонд покриє цю витрату безкоштовно.</b>":""}`,
+          Гроші списуються одразу, незалежно від того, чим усе скінчиться.${free?"<br><b>Резервний фонд покриє цю витрату безкоштовно.</b>":""}${cover}`,
     odds:{p:0.20, bad:"масований удар", good:"демонстраційний пуск"},
     note:`Математика ставки: без резерву очікувані втрати = 0,20 × шкода; з резервом = ціна резерву + 0,04 × шкода.
           Кожен пуск — незалежна подія, попередні результати шансів не змінюють.`,
     ledger:[`ставок: ${G.luckBets||0}`, `вгадано: ${G.luckWins||0}`, acc!==null?`точність: ${acc}%`:null,
-            G.fund?`резервний фонд: ${G.fund}`:null],
+            G.fund?`резервний фонд: ${G.fund}`:null, target?`Patriot над ціллю: ${pats.length}`:null],
     timer:18, timeout:"skip",
     choices:[
       {t:"Задіяти резерв", s:"Розосередити сили й підняти укриття — шкода впаде до 20%.",
        tag: free ? "безкоштовно (фонд)" : `−${cost} ₴`, k:"react"},
       {t:"Не реагувати", s:"Зберегти бюджет і покластися на 80%, що це демонстрація.", tag:"0 ₴", k:"skip", bold:true}
     ],
-    onPick: k => resolveOreshnik(k, cost, free)
+    onPick: k => resolveOreshnik(k, cost, free, target)
   });
 }
-function resolveOreshnik(k, cost, free){
+function resolveOreshnik(k, cost, free, target){
   const reacted = k === "react";
   G.luckBets = G.luckBets || 0; G.luckWins = G.luckWins || 0;
   if(reacted){
@@ -1391,7 +1494,7 @@ function resolveOreshnik(k, cost, free){
   const strong = roll < 0.20;
   const rollLine = `Кидок: <b>${(roll*100).toFixed(1)}</b> проти порогу <b>20,0</b> → ${strong?"масований удар":"демонстраційний пуск"}`;
   if(!strong){
-    G.redAlert = 0;
+    G.redAlert = 0; G.oreTarget = null;
     addMood(reacted ? +3 : +1, reacted ? "держава підготувалася завчасно" : "нерви витримали");
     tell({
       tone:"warn", eyebrow:"Відбій тривоги",
@@ -1408,11 +1511,24 @@ function resolveOreshnik(k, cost, free){
   if(reacted) G.luckWins++;
   G.stats.oreHits++;
   G.redAlert = 1; G.shake = 1.6; SFX.cityHit();
-  const mult = (reacted ? 0.2 : 1) * cityDmgMul();
   const alive = G.cities.filter(c => c.hp > 0);
-  const main = alive.length ? alive[(Math.random()*alive.length)|0] : null;
+  const main = target && target.hp > 0 ? target : (alive.length ? alive[(Math.random()*alive.length)|0] : null);
+  /* перехоплення бойових блоків батареями Patriot над ціллю */
+  const pats = patriotsCovering(main);
+  const miss = blockMissChance(pats);
+  let stopped = 0;
+  for(let i=0;i<ORE_BLOCKS;i++) if(Math.random() > miss) stopped++;
+  for(let i=0;i<stopped;i++){
+    const t = pats[i % pats.length], a = Math.random()*6.283, r = (26 + Math.random()*44)*S;
+    const bx = main.x + Math.cos(a)*r, by = main.y - Math.abs(Math.sin(a))*r - 14*S;
+    G.tracers.push({x1:t.x, y1:t.y, x2:bx, y2:by, life:0.35, c:"#c08bff"});
+    boom(bx, by, 1.3, "#c08bff");
+  }
+  if(stopped) SFX.missile();
+  const through = (ORE_BLOCKS - stopped) / ORE_BLOCKS;
+  const mult = (reacted ? 0.2 : 1) * cityDmgMul() * through;
   let total = 0, lost = 0;
-  if(main){
+  if(main && through > 0){
     const d = 64*mult*threat(G.wave).dmg;
     main.hp = Math.max(0, main.hp-d); main.flash = 1; total += d;
     boom(main.x, main.y, 2.6, "#ff9a3d");
@@ -1424,25 +1540,27 @@ function resolveOreshnik(k, cost, free){
         boom(c.x, c.y, 1.1, "#ff9a3d");
       }
     }
-    if(!reacted){
-      for(const t of [...G.towers]){
-        if(Math.hypot(t.x-main.x, t.y-main.y) < 150 && Math.random() < 0.4){
-          G.towers = G.towers.filter(x => x !== t); lost++; boom(t.x, t.y, 1, "#ff5a6e");
-        }
-      }
+    for(const t of [...G.towers]){
+      const dd = Math.hypot(t.x-main.x, t.y-main.y);
+      if(dd < 160 && damageTower(t, towerMaxHP(t) * (reacted ? 0.3 : 0.95) * through * (1 - dd/320), "«Орєшнік»")) lost++;
     }
   }
   G.streak = 0;
   G.leaks++; G.waveLeaks++;
   if(G.promise) G.promise.leaks += 2;
   addMood(reacted ? +9 : -18, reacted ? "удар зустріли підготовленими" : "удар застав країну зненацька");
+  const patLine = !main ? "" : pats.length
+    ? `Patriot перехопили <b>${stopped} з ${ORE_BLOCKS}</b> бойових блоків.`
+    : `Patriot над містом не було — усі ${ORE_BLOCKS} блоків дійшли до цілі.`;
+  if(stopped) say(`Patriot перехопили ${stopped} з ${ORE_BLOCKS} блоків «Орєшніка» над містом ${main.n}`, "good");
+  G.oreTarget = null;
   say(`«ОРЄШНІК»: удар по ${main?main.n:"—"}, −${Math.round(total)} міцності${lost?`, втрачено позицій: ${lost}`:""}`, "hit");
   tell({
     tone:"alarm", eyebrow:"Наслідки удару",
     title: reacted ? "Удар прийшовся по розосередженому тилу" : "Прямий удар без підготовки",
     quote: reacted ? "«Резерв спрацював: більшість об'єктів винесли заздалегідь.»"
                    : "«Епіцентр у житловій забудові. Рятувальники на місці.»",
-    body:`${rollLine}.<br>Втрати міцності: <b>${Math.round(total)}</b>${lost?`, знищено позицій ППО: <b>${lost}</b>`:""}.
+    body:`${rollLine}.<br>${patLine} Втрати міцності: <b>${Math.round(total)}</b>${lost?`, знищено позицій ППО: <b>${lost}</b>`:""}.
           ${reacted ? "Ставка окупилася: без резерву втрати були б уп'ятеро більшими."
                     : "Саме той випадок, проти якого страхує резерв."}`,
     ledger:[`ставок: ${G.luckBets}`, `вгадано: ${G.luckWins}`, `ударів: ${G.stats.oreHits}`],
@@ -1729,7 +1847,11 @@ const SLIDES = [
         <b>Відбудова</b> плавна: увімкніть 🔧 навпроти міста — і воно відновлюється щосекунди, поки є гроші.
         Місто з нуля відбудовується вдвічі повільніше й дорожче.</div></div>
       <div class="keyrow"><div class="ic">🎚️</div><div class="tx">
-        Кожну позицію можна <b>покращити до 3 рівня</b> (+22% радіус, +25% шкоди) або продати.</div></div>`
+        Кожну позицію можна <b>покращити до 3 рівня</b> (+22% радіус, +25% шкоди, +25% міцності) або продати.</div></div>
+      <div class="keyrow"><div class="ic">🎯</div><div class="tx">
+        Противник <b>б'є і по ваших позиціях</b>: «Ланцети» полюють на техніку, КАБи — на позиції біля фронту,
+        частина «Іскандерів» і «Кинджалів» — на Patriot і NASAMS. Між хвилями розрахунки лагодять пошкоджене,
+        а зруйновану позицію втрачено. Міцність підсилює контракт «Інженерне укріплення» у Штабі.</div></div>`
   }),
   () => ({
     eyebrow:"Інструктаж · 5/5",
@@ -1737,7 +1859,8 @@ const SLIDES = [
     html:`
       <div class="keyrow"><div class="ic">🛻</div><div class="tx"><b>МВГ</b> — тільки дрони, зате дешево й швидко.</div></div>
       <div class="keyrow"><div class="ic">🚀</div><div class="tx"><b>ПЗРК і NASAMS</b> — дрони, крилаті ракети та КАБи.</div></div>
-      <div class="keyrow"><div class="ic">🛰️</div><div class="tx"><b>Patriot</b> — єдиний, хто дістає балістику й «Кинджали» з МіГ-31К.</div></div>
+      <div class="keyrow"><div class="ic">🛰️</div><div class="tx"><b>Patriot</b> б'є лише дорогі цілі — крилаті ракети, «Іскандери» й «Кинджали» з МіГ-31К —
+        і перехоплює бойові блоки «Орєшніка» над містами у своїй зоні. По «шахедах», дронах і КАБах не стріляє.</div></div>
       <div class="keyrow"><div class="ic">📡</div><div class="tx"><b>РЕБ</b> не стріляє: глушить дрони, збиває їх з курсу — і подвоює ефективність сусідніх позицій.</div></div>
       <div class="keyrow"><div class="ic">⚡</div><div class="tx">Зліт <b>МіГ-31К</b> і загроза <b>«Орєшніка»</b> (ставка 30% бюджету проти шансу 20/80)
         можуть прийти <b>будь-коли — навіть у тиші між хвилями</b>. Ще є <b>пакети партнерів</b>, що дають гроші ціною настрою.</div></div>
@@ -1868,7 +1991,8 @@ function defeatHTML(){
         <span>Перки: <b>${perks}</b></span>
         <span>Ставок проти «Орєшніка»: <b>${G.luckBets||0}</b>${G.luckBets?` · вгадано <b>${G.luckWins}</b>`:""}</span>
         <span>Пакетів партнерів: <b>${G.stats.aidTaken}</b> · відмов: <b>${G.stats.aidRefused}</b></span>
-        <span>На відбудову: <b>${Math.round(G.stats.spentRep)} ₴</b></span>
+        <span>На відбудову й ремонт: <b>${Math.round(G.stats.spentRep)} ₴</b></span>
+        <span>Втрачено позицій ППО: <b>${G.stats.towersLost||0}</b></span>
       </div>
       <div class="tally">${tally}</div>
       <div class="cityroll">${roll}</div>
@@ -1963,6 +2087,15 @@ function drawCities(){
       ctx.beginPath(); ctx.arc(c.x,c.y,(26*c.flash+8)*S,0,6.283);
       ctx.fillStyle = `rgba(255,80,100,${0.28*c.flash})`; ctx.fill();
     }
+    if(G.redAlert && G.oreTarget === c){
+      const pr = (24 + Math.sin(performance.now()/150)*4) * S;
+      ctx.strokeStyle = "rgba(255,77,94,.95)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(c.x, c.y, pr, 0, 6.283); ctx.stroke();
+      ctx.beginPath(); ctx.arc(c.x, c.y, pr*0.62, 0, 6.283); ctx.stroke();
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        ctx.beginPath(); ctx.moveTo(c.x+dx*pr*0.8, c.y+dy*pr*0.8); ctx.lineTo(c.x+dx*pr*1.3, c.y+dy*pr*1.3); ctx.stroke();
+      }
+    }
     if(c.rep){
       ctx.beginPath(); ctx.arc(c.x,c.y,(16 + Math.sin(G.t*4)*2)*S,0,6.283);
       ctx.strokeStyle = "rgba(79,211,154,.55)"; ctx.setLineDash([3,4]); ctx.lineWidth = 1.4; ctx.stroke();
@@ -2034,7 +2167,20 @@ function drawTowers(){
       ctx.setLineDash([2,7]); ctx.lineWidth = 1; ctx.strokeStyle = "rgba(255,203,61,.30)"; ctx.stroke();
       ctx.restore();
     }
+    if(t.flash > 0){
+      ctx.save(); ctx.beginPath(); ctx.arc(t.x, t.y, (13 + 10*t.flash)*S, 0, 6.283);
+      ctx.fillStyle = `rgba(255,80,100,${0.35*t.flash})`; ctx.fill(); ctx.restore();
+    }
     towerGlyph(t.k, t.x, t.y, t.ang, t.rec||0, t.lvl||1);
+    const mh = towerMaxHP(t), hp = towerHP(t);
+    if(hp < mh){
+      const r = Math.max(0, hp/mh), bw = 22*S, bh = 3*S, bx = t.x - bw/2, by = t.y + 13*S;
+      ctx.save();
+      ctx.fillStyle = "rgba(8,12,18,.85)"; ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = r > 0.5 ? "#4fd39a" : r > 0.25 ? "#ffcb3d" : "#ff5a6e";
+      ctx.fillRect(bx, by, bw*r, bh);
+      ctx.restore();
+    }
     if(G.sel === t){
       ctx.save(); ctx.beginPath(); ctx.arc(t.x,t.y,14*S,0,6.283);
       ctx.strokeStyle = "#ffcb3d"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
@@ -2235,8 +2381,9 @@ function upgradeTower(t){
 }
 function sellTower(t){
   if(!t) return;
-  const back = Math.round((t.spent || TOWERS[t.k].cost) * 0.6);
+  const back = sellValue(t);
   G.money += back;
+  t.gone = true;
   G.towers = G.towers.filter(x => x !== t);
   if(G.sel === t) G.sel = null;
   say(`${TOWERS[t.k].short} згорнуто (+${back} ₴)`);
@@ -2270,7 +2417,7 @@ function renderBuild(){
         <span class="glyph">${glyphSVG(k)}</span>
         <span>
           <span class="name">${i+1}. ${T_.name}${unl?"":" 🔒"}</span>
-          <span class="desc">${T_.desc}<br>Цілі: ${hits}${T_.aura?"":` · радіус ${Math.round(T_.range*mRange())}`}</span>
+          <span class="desc">${T_.desc}<br>Цілі: ${hits}${T_.aura?"":` · радіус ${Math.round(T_.range*mRange())}`} · міцність ${towerMaxHP({k, lvl:1})}</span>
         </span>
         <span class="cost ${can?"":"no"}">${cost} ₴</span>
       </button>`;
@@ -2280,11 +2427,12 @@ function renderBuild(){
     html += `
       <div class="selbox">
         <div class="h">${T_.name} · рівень ${lvl}/${TOWER_MAXLVL}</div>
-        <div class="m">Радіус ${Math.round(towerRange(t))}${T_.aura?"":` · шкода ${towerDmg(t).toFixed(1)} · темп ${(T_.rate*mRate()).toFixed(2)}/с`}</div>
+        <div class="m">Міцність ${Math.ceil(towerHP(t))}/${towerMaxHP(t)} · радіус ${Math.round(towerRange(t))}${T_.aura?"":` · шкода ${towerDmg(t).toFixed(1)} · темп ${(T_.rate*mRate()).toFixed(2)}/с`}</div>
         <div class="row">
           <button class="btn sm" data-upg="1" ${maxed||G.money<upCost(t)?"disabled":""} type="button">
             ${maxed?"Максимум":`Покращити · ${upCost(t)} ₴`}</button>
-          <button class="btn sm danger" data-sell="1" type="button">Продати · ${Math.round((t.spent||T_.cost)*0.6)} ₴</button>
+          ${fixCost(t) > 0 ? `<button class="btn sm" data-fix="1" ${G.money<fixCost(t)?"disabled":""} type="button">Ремонт · ${fixCost(t)} ₴</button>` : ""}
+          <button class="btn sm danger" data-sell="1" type="button">Продати · ${sellValue(t)} ₴</button>
         </div>
       </div>`;
   }
@@ -2386,10 +2534,11 @@ function renderQuick(){
   } else if(G.sel){
     const t = G.sel, T_ = TOWERS[t.k], lvl = t.lvl||1, maxed = lvl >= TOWER_MAXLVL;
     extra = `<div class="qnote">
-      <span>${T_.short} · рівень ${lvl}/${TOWER_MAXLVL}</span>
+      <span>${T_.short} · рівень ${lvl}/${TOWER_MAXLVL} · міцність ${Math.ceil(towerHP(t))}/${towerMaxHP(t)}</span>
       <span class="qact">
         <button class="btn sm" data-upg="1" ${maxed||G.money<upCost(t)?"disabled":""} type="button">${maxed?"Максимум":`Покращити ${upCost(t)} ₴`}</button>
-        <button class="btn sm danger" data-sell="1" type="button">Продати ${Math.round((t.spent||T_.cost)*0.6)} ₴</button>
+        ${fixCost(t) > 0 ? `<button class="btn sm" data-fix="1" ${G.money<fixCost(t)?"disabled":""} type="button">Ремонт ${fixCost(t)} ₴</button>` : ""}
+        <button class="btn sm danger" data-sell="1" type="button">Продати ${sellValue(t)} ₴</button>
         <button class="btn sm" data-cancel="1" type="button" aria-label="Зняти виділення">✕</button>
       </span></div>`;
   }
@@ -2401,10 +2550,11 @@ function renderLegend(){
     <div class="row">
       <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${d.c}"></span>
       <span class="t">${d.n}</span>
-      <span class="k">${d.recon?"розвідка":CLS[d.cls]} · ${d.pay} ₴</span>
+      <span class="k">${HUNT[k]?"⌖ ":""}${d.recon?"розвідка":CLS[d.cls]} · ${d.pay} ₴</span>
     </div>`).join("")
     + `<div class="row" style="margin-top:2px"><span></span><span class="k" style="grid-column:2/4;line-height:1.5">
-       Балістику й «Кинджали» дістає лише Patriot. КАБи й крилаті — ПЗРК та NASAMS. МВГ — тільки дрони.</span></div>`;
+       Patriot — лише крилаті, балістика й «Кинджали» та блоки «Орєшніка». КАБи — ПЗРК і NASAMS. МВГ — тільки дрони.
+       ⌖ — полює на ваші позиції ППО.</span></div>`;
 }
 
 function renderLog(){
@@ -2535,7 +2685,8 @@ el.build.addEventListener("click", ev => {
   if(G.modal || G.over) return;
   const b = ev.target.closest("[data-build]");
   if(b){ const k = b.dataset.build; G.place = G.place === k ? null : k; G.sel = null; G.ghost = null; dirty.rail = true; return; }
-  if(ev.target.closest("[data-upg]")) upgradeTower(G.sel);
+  if(ev.target.closest("[data-fix]")) fixTower(G.sel);
+  else if(ev.target.closest("[data-upg]")) upgradeTower(G.sel);
   else if(ev.target.closest("[data-sell]")) sellTower(G.sel);
 });
 el.quick.addEventListener("click", ev => {
@@ -2547,7 +2698,8 @@ el.quick.addEventListener("click", ev => {
     dirty.rail = true; return;
   }
   if(ev.target.closest("[data-cancel]")){ G.place = null; G.sel = null; G.ghost = null; dirty.rail = true; return; }
-  if(ev.target.closest("[data-upg]")) upgradeTower(G.sel);
+  if(ev.target.closest("[data-fix]")) fixTower(G.sel);
+  else if(ev.target.closest("[data-upg]")) upgradeTower(G.sel);
   else if(ev.target.closest("[data-sell]")) sellTower(G.sel);
 });
 
@@ -2688,7 +2840,7 @@ function snapshot(){
     wave: G.phase === "wave" ? Math.max(0, G.wave-1) : G.wave,
     kills:G.kills, leaks:G.leaks,
     cities:G.cities.map(c => ({hp:c.hp, max:c.max})),
-    towers:G.towers.map(t => ({k:t.k, x:t.x, y:t.y, lvl:t.lvl||1, spent:t.spent||TOWERS[t.k].cost})),
+    towers:G.towers.map(t => ({k:t.k, x:t.x, y:t.y, lvl:t.lvl||1, spent:t.spent||TOWERS[t.k].cost, hp:t.hp})),
     unlocked:{...G.unlocked}, up:{...G.up}, perk:{...G.perk},
     effects:G.effects.map(e => ({...e})),
     fund:G.fund, selfBoost:G.selfBoost||0, pendingPerks:G.pendingPerks||0,
@@ -2711,7 +2863,7 @@ function restore(d){
   G.lastChance = d.lastChance !== false;
   (d.cities||[]).forEach((c,i) => { if(G.cities[i]){ G.cities[i].max = c.max; G.cities[i].hp = Math.min(c.hp, c.max); } });
   G.towers = (d.towers||[]).filter(t => TOWERS[t.k])
-    .map(t => ({k:t.k, x:t.x, y:t.y, cd:0, ang:-1.57, rec:0, lvl:t.lvl||1, spent:t.spent}));
+    .map(t => ({k:t.k, x:t.x, y:t.y, cd:0, ang:-1.57, rec:0, lvl:t.lvl||1, spent:t.spent, hp:t.hp == null ? null : t.hp}));
   G.phase = "prep";
   G.prepMax = G.prepLeft = Math.min(34, 20 + G.wave);
   G.nextWave = previewWave(G.wave + 1);
